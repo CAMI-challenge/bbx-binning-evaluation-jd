@@ -1,0 +1,73 @@
+#!/bin/bash
+#
+#   evaluate-binning.bash - Generates statistics for binning results and writes
+#                           them in a CAMI-compliant form, for use in a Docker
+#                           container
+#
+#   Written in 2015 by Johannes Dröge johannes.droege@uni-duesseldorf.de
+#
+#   To the extent possible under law, the author(s) have dedicated all copyright
+#   and related and neighboring rights to this software to the public domain
+#   worldwide. This software is distributed without any warranty.
+#
+#   You should have received a copy of the CC0 Public Domain Dedication along
+#   with this software. If not, see
+#   http://creativecommons.org/publicdomain/zero/1.0/
+
+set -o errexit
+set -o nounset
+
+required_programs="ncbitax2sqlite tax2racol confusion-matrix cmat2camistats fasta-seqlen sort md5sum"
+# Check for required programs
+for cmd in $required_programs; do
+  if test -z "$(which "$cmd")"; then
+    echo "'$cmd' not found in PATH."
+    exit 1
+  fi
+done
+
+# functions
+taxonomy_version() { cat "$@" | awk -F '\t' '{if($1 != $3) print $1 "\t" $3}' | LC_COLLATE=C sort -u | md5sum | cut -d ' ' -f 1; }
+
+# input variables
+ranks='species,genus,family,order,class,phylum,superkingdom'
+cachedir="$BBX_CACHEDIR"
+fastafiles=""
+gold_taxfile=""
+pred_taxfile=""
+taxdir=""
+outtable=""
+
+# cached variables
+taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
+taxsqlite="$cachedir/ncbi-taxonomy_$taxversion.sqlite"
+gold_version="$(md5sum < "$gold_taxfile")"
+gold_racolfile="$cachedir/gold_$goldversion_$taxversion.racol"
+seqlenfile="$cachedir/gold_$goldversion.seqlen"
+
+# temporary variables
+pred_racolfile="$tmpdir/pred.racol"
+cmatfile="$tmpdir/pred.cmat"
+
+# go to temporary dir
+tmpdir="$(mktemp -d)"
+cd "$tmpdir" # go to tmpdir
+
+# check input and ref files
+
+
+# refresh cache
+[ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
+[ "$gold_racolfile" -ot "$gold_taxfile" ] && tax2racol -t "$sqlitefile" -ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
+[ ! -r "$seqlenfile" ] && cat $fastafiles | fasta-seqlen > "$seqlenfile"
+
+# generate prediction intermediate files
+tax2racol -t "$sqlitefile" -ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
+confusion-matrix --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seqlenfile" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
+
+# write CAMI stats
+cmat2camistats < "$cmatfile" > "$outtable"
+
+# cleanup
+test -n "$tmpdir" && rm -r "$tmpdir"
+
