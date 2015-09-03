@@ -21,10 +21,15 @@ This template contains a working hello world biobox.
         git clone https://github.com/bioboxes/biobox-template
 
 2. Add required packages to `Dockerfile`. Put package names after `RUN dockerfile-install-packages`
+
 3. Copy your software to `opt/`. You should create a subfolder under `opt/` in which you should place your scripts, programs and data.
+
 4. Create a task file under `tasks/`. Name it like your task (spaces discouraged). Save it as a UTF8-encoded text file with UNIX line breaks (`\n`)
+
 5. *Optional: edit `opt/default`*
+
 6. *Optional: remove `tasks/helloworld` and `opt/helloworld_0.1/`*
+
 7. Build the biobox
 
         docker build -t="dockeruser/name_of_biobox" .
