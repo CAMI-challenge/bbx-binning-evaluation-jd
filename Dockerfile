@@ -1,5 +1,5 @@
 FROM bioboxes/base
-#MAINTAINER your_full_name, your_email@domain
+MAINTAINER Johannes Dröge, johannes.droege@uni-duesseldorf.de
 
 # add required Debian packages here (uncomment)
 #RUN ${BBX_BINDIR}/dockerfile-install-packages mypackage1 mypackage2
