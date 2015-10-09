@@ -26,16 +26,22 @@ for cmd in $required_programs; do
   fi
 done
 
+# some assertions
+[ "$(cut -d '.' -f 1-2 <<<$bbx_version)" == '0.9' ]  # check biobox definition
+[ -r "$bbx_arguments_1_binning_0_value" ]
+[ -r "$bbx_arguments_0_fasta_value" ]
+[ -d "$bbx_arguments_3_databases_0_value" -a -r "$bbx_arguments_3_databases_0_value/names.dmp" -a -r "$bbx_arguments_3_databases_0_value/nodes.dmp" ]
+
 # functions
 taxonomy_version() { cat "$@" | awk -F '\t' '{if($1 != $3) print $1 "\t" $3}' | LC_COLLATE=C sort -u | md5sum | cut -d ' ' -f 1; }
 
 # input variables
 ranks='species,genus,family,order,class,phylum,superkingdom'
 cachedir="$BBX_CACHEDIR"
-fastafiles=""
-gold_taxfile=""
-pred_taxfile=""
-taxdir=""
+fastafile="$bbx_arguments_0_fasta_value"
+gold_taxfile="$bbx_arguments_1_binning_1_value"
+pred_taxfile="$bbx_arguments_1_binning_0_value"
+taxdir="$bbx_arguments_3_databases_0_value"
 outtable=""
 
 # cached variables
@@ -59,7 +65,7 @@ cd "$tmpdir" # go to tmpdir
 # refresh cache
 [ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
 [ "$gold_racolfile" -ot "$gold_taxfile" ] && tax2racol -t "$sqlitefile" -ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
-[ ! -r "$seqlenfile" ] && cat $fastafiles | fasta-seqlen > "$seqlenfile"
+[ ! -r "$seqlenfile" ] && cat $fastafile | fasta-seqlen > "$seqlenfile"
 
 # generate prediction intermediate files
 tax2racol -t "$sqlitefile" -ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
