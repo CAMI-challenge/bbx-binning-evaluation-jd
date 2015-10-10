@@ -38,12 +38,12 @@ tax2racol -t taxonomy.sqlite -ranks genus,family,order < predictions.tax > predi
 
 ### Generate weights (sequence length) file
 ```bash
-fasta-seqlen.awk < predictions.fna > predictions.seqlen
+fasta-seqlen < predictions.fna > predictions.seqlen
 ```
 
 ### Generate confusion matrices
 ```bash
-confusion-matrix --rows labels.racol --columns predictions.racol --weights predictions.seqlen --matrix-form quadratic --allow-missing-columns > predictions.cmat
+confusionmatrix --rows labels.racol --columns predictions.racol --weights predictions.seqlen --matrix-form quadratic --allow-missing-columns > predictions.cmat
 ```
 
 ### Display basic statistics
@@ -56,4 +56,3 @@ For understanding the measure currently implemented in this framework, please re
 
 ## Feedback
 Please send feedback and questions to johannes.droege@uni-duesseldorf.de
-
