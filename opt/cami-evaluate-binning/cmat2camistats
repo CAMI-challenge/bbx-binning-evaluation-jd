@@ -50,6 +50,6 @@ if __name__ == "__main__":
 
         for psize, rsize, prec, rec, name in sorted(tmpstore, reverse=True):
           print "%s\t%s\t%.2f\t%.2f\t%i\t%i" % (cmat.title, name, prec, rec, psize, rsize)
-          if upsize or ursize:
-            print "%s\tunassigned\tnan\tnan\t%i\t%i" % (cmat.title, upsize, ursize)
+        if upsize or ursize:
+          print "%s\tunassigned\tnan\tnan\t%i\t%i" % (cmat.title, upsize, ursize)
 

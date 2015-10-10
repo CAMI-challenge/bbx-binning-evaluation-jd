@@ -28,8 +28,7 @@ done
 
 # functions
 taxonomy_version() { cat "$@" | awk -F '\t' '{if($1 != $3) print $1 "\t" $3}' | LC_COLLATE=C sort -u | md5sum | cut -d ' ' -f 1; }  # taxonomy hash
-binning2tax() { cat $@ | grep -v -e '^@' -e '^#' | cut -f 1,2; } # bioboxes.org binning to simple TAB-separated
-
+binning2tax() { cat $@ | grep -v -e '^@' -e '^#' -e '^$' | cut -f 1,2; } # bioboxes.org binning to simple TAB-separated
 
 # input variables
 ranks='species,genus,family,order,class,phylum,superkingdom'
