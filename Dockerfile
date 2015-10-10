@@ -2,7 +2,7 @@ FROM bioboxes/base
 MAINTAINER Johannes Dröge, johannes.droege@uni-duesseldorf.de
 
 # add required Debian packages here (uncomment)
-#RUN ${BBX_BINDIR}/dockerfile-install-packages mypackage1 mypackage2
+RUN ${BBX_BINDIR}/dockerfile-install-packages python2.7-numpy
 
 # add task definitions
 COPY tasks ${BBX_TASKDIR}
