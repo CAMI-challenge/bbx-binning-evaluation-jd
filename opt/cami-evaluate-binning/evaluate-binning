@@ -17,7 +17,7 @@
 set -o errexit
 set -o nounset
 
-required_programs="ncbitax2sqlite tax2racol confusionmatrix cmat2camistats fasta-seqlen sort md5sum"
+required_programs="ncbitax2sqlite tax2racol confusionmatrix cmat2perbinstats cmat2summarystats fasta-seqlen sort md5sum"
 # Check for required programs
 for cmd in $required_programs; do
   if test -z "$(which "$cmd")"; then
@@ -87,11 +87,22 @@ cmatfile="$tmpdir/pred.cmat"
 
 # generate prediction intermediate files
 binning2tax < "$pred_binningfile" > "$pred_taxfile"
-tax2racol --taxonomy-backend-file "$taxsqlite" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
+
+if true; then  # TODO: only for taxonomic binning (read binning header)
+  tax2racol --taxonomy-backend-file "$taxsqlite" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
+fi
+
 confusionmatrix --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seqlenfile" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
 
-# write CAMI stats
+# write stats
 cmat2perbinstats < "$cmatfile" > 'perbin_stats.tsv'
+
+cmat2summarystats -t 0.99 < "$cmatfile" > "summary_stats_99.tsv"
+
+count-depth_true_false_unknown --labels "$gold_racolfile" --predictions "$pred_racolfile" --weights "$seqlenfile" --scale .001 > absolute_counts.tsv #--with-unknown-labels, in kb
+
+cmat2heatmap --basename cmat_heatmap_ --format png < "$cmatfile"
+
 cp "$BBX_OPTDIR/cami-evaluate-binning/output.yaml" ./ 
 
 # cleanup
