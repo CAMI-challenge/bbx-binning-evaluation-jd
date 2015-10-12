@@ -126,7 +126,7 @@ if __name__ == "__main__":
 				correct[0] += weight[seq]
 			except KeyError:
 				correct[0] = weight[seq]
-			stderr.write( "%s not found in prediction file\n" % (seq) )
+			#stderr.write( "%s not found in prediction file\n" % (seq) )
 
 	for seq, path in pred.items():
 		counter += 1
