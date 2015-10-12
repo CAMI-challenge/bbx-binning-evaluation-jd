@@ -163,7 +163,7 @@ class ConfusionMatrix:
 					totalsize += size
 					precs_sizes.append( (size,correct/float( size )) )
 			precs_sizes.sort( reverse=True ) #reverse sort from high to low bins
-			if type( truncate ) == float and truncate < 1.:
+			if type( truncate ) == float and truncate <= 1.:
 				precs = []
 				lastsize = cumsize = 0
 				threshold = ceil( totalsize*truncate )
