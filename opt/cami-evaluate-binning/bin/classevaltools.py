@@ -200,6 +200,8 @@ class ConfusionMatrix:
 		return totalcorrect/float( totalsize )
 	
 	def plotMatrix( self, ignore_class="", title="", dpi=300, output=None, fmt=None, extratxt=None ):
+		import matplotlib
+		matplotlib.use('Agg')
 		from matplotlib import pyplot, colors, font_manager
 		from math import sqrt
 		
