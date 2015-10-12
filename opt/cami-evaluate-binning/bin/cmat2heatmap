@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     # parse command line options
     try:
-        opts, args = getopt.getopt(argv[1:], 'hb:i:d:', ['help', 'basename=', 'ignore-class=', 'description='])
+        opts, args = getopt.getopt(argv[1:], 'hb:i:f:d:', ['help', 'basename=', 'ignore-class=', 'format=', 'description='])
     except getopt.GetoptError, err:
         print str(err)  # will print something like "option -a not recognized"
         usage()
@@ -45,6 +45,7 @@ if __name__ == "__main__":
 
     basename = ""
     ignore_class = ""
+    outfmt = "pdf"
     description = "Confusion matrix as heatmap: red=false, blue=true, grey=reject.\nColor intensity is relative to highest value in matrix."
 
     for o, a in opts:
@@ -57,9 +58,11 @@ if __name__ == "__main__":
             ignore_class = a
         elif o in ("-d", "--description"):
             description = a
+        elif o in ("-f", "--format"):
+                    outfmt = a            
         else:
             assert False, "unhandled option"
 
     for cmat in parseConfusionMatrix(stdin):
-        cmat.plotMatrix(ignore_class=ignore_class, title=cmat.title, output="%s%s.pdf" % (basename, cmat.title),
-                        fmt="pdf", extratxt=description)
+        cmat.plotMatrix(ignore_class=ignore_class, title=cmat.title, output="%s%s.%s" % (basename, cmat.title, outfmt),
+                        fmt=outfmt, extratxt=description)
