@@ -37,7 +37,6 @@ fastafile="$bbx_arguments_0_fasta_value"
 gold_binningfile="$bbx_arguments_1_binning_0_value"
 pred_binningfile="$bbx_arguments_1_binning_1_value"
 taxdir="$bbx_arguments_3_databases_0_value"
-outtable="$BBX_MNTDIR/output/eval.tsv"
 
 # some assertions
 if [ ! "$(cut -d '.' -f 1-2 <<<$bbx_version)" == '0.9' ]; then
@@ -92,8 +91,8 @@ tax2racol --taxonomy-backend-file "$taxsqlite" --ranks "$ranks" < "$pred_taxfile
 confusionmatrix --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seqlenfile" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
 
 # write CAMI stats
-cmat2camistats < "$cmatfile" > "$outtable"
+cmat2perbinstats < "$cmatfile" > 'perbin_stats.tsv'
+cp "$BBX_OPTDIR/cami-evaluate-binning/output.yaml" ./ 
 
 # cleanup
 test -n "$tmpdir" && rm -r "$tmpdir"
-
