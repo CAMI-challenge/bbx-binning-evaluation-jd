@@ -1,0 +1,7 @@
+version: 0.1.1
+results:
+  - name: per-bin statistics
+    description: precision, recall, data sizes etc. for each bin at each rank level
+    type: tsv
+    inline: false
+    value: perbin_stats.tsv
