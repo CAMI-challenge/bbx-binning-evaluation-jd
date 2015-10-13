@@ -103,7 +103,7 @@ count-depth_true_false_unknown --labels "$gold_racolfile" --predictions "$pred_r
 
 cmat2heatmap --basename cmat_heatmap_ --format png < "$cmatfile"
 
-cp "$BBX_OPTDIR/cami-evaluate-binning/output.yaml" ./ 
+cp "$BBX_OPTDIR/cami-evaluate-binning/biobox.yaml" ./ 
 
 # cleanup
 test -n "$tmpdir" && rm -r "$tmpdir"
