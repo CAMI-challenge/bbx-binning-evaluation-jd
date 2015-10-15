@@ -1,0 +1,13 @@
+---
+version: 0.10.0
+results:
+  - name: overall class entropy
+    description: entropy for each level that was evaluated (measures bin purity) [doi://10.1093/bioinformatics/btm134]
+    type: tsv
+    inline: false
+    value: entropy.tsv
+  - name: confusion matrix heatmap
+    description: binning confusion matrix as heatmap with cells true (blue), false (red) and unknown (grey) positions
+    type: png
+    inline: false
+    value: cmat_heatmap_binning.png

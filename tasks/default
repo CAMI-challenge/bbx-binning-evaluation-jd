@@ -1,1 +1,1 @@
-cd "$BBX_MNTDIR/output" && PATH="$BBX_OPTDIR/cami-evaluate-binning/bin:$PATH" "$BBX_OPTDIR/cami-evaluate-binning/evaluate-binning"
+. "$BBX_TASKDIR/unsupervised"

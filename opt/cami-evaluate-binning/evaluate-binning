@@ -28,18 +28,16 @@ done
 
 # functions
 taxonomy_version() { cat "$@" | awk -F '\t' '{if($1 != $3) print $1 "\t" $3}' | LC_COLLATE=C sort -u | md5sum | cut -d ' ' -f 1; }  # taxonomy hash
-binning2tax() { cat $@ | grep -v -e '^@' -e '^#' -e '^$' | cut -f 1,2; } # bioboxes.org binning to simple TAB-separated
+binning2tsv() { grep -v -e '^@' -e '^#' -e '^$' | cut -f 1,2; } # bioboxes.org binning to simple TAB-separated
 
 # input variables
-ranks='species,genus,family,order,class,phylum,superkingdom'
 cache="$BBX_CACHEDIR"
-fastafile="$bbx_arguments_0_fasta_value"
-gold_binningfile="$bbx_arguments_1_binning_0_value"
-pred_binningfile="$bbx_arguments_1_binning_1_value"
-taxdir="$bbx_arguments_3_databases_0_value"
+fastafile="$bbx_arguments_sequences_path"
+gold_binningfile="$bbx_arguments_labels_path"
+pred_binningfile="$bbx_arguments_predictions_path"
 
 # some assertions
-if [ ! "$(cut -d '.' -f 1-2 <<<$bbx_version)" == '0.9' ]; then
+if [ ! "$(cut -d '.' -f 1-2 <<<$bbx_version)" == '0.10' ]; then
   echo "Bioboxes.org input definition is '$bbx_version', not '0.9'."
   exit 1
 fi
@@ -59,51 +57,80 @@ if [ ! -r "$fastafile" ]; then
   exit 1
 fi
 
-if ! [ -d "$taxdir" -a -r "$taxdir/names.dmp" -a -r "$taxdir/nodes.dmp" ]; then
-  echo "Cannot read input taxonomy in '$taxdir'."
-  exit 1
-fi
 
-
-# cached variables
-taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
-taxsqlite="$cache/ncbi-taxonomy_${taxversion}.sqlite"
+# general cached variables
 goldversion="$(md5sum < "$gold_binningfile" | cut -d ' ' -f 1)"
-gold_taxfile="$cache/gold_${goldversion}.tax"
-gold_racolfile="$cache/gold_${goldversion}_${taxversion}.racol"
 seqlenfile="$cache/gold_${goldversion}.seqlen"
 
-# temporary variables
+# general temporary variables
 tmpdir="$(mktemp -d)"
-pred_taxfile="$tmpdir/pred.tax"
-pred_racolfile="$tmpdir/pred.racol"
 cmatfile="$tmpdir/pred.cmat"
 
-# refresh cache
-[ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
-[ ! -r "$gold_taxfile" ] && binning2tax < "$gold_binningfile" > "$gold_taxfile"
-[ ! -r "$gold_racolfile" ] && tax2racol --taxonomy-backend-file "$taxsqlite" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
+# general refresh cache
 [ ! -r "$seqlenfile" ] && cat $fastafile | fasta-seqlen > "$seqlenfile"
 
-# generate prediction intermediate files
-binning2tax < "$pred_binningfile" > "$pred_taxfile"
 
-if true; then  # TODO: only for taxonomic binning (read binning header)
+if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
+  taxdir="$bbx_arguments_databases_taxonomy_path"
+  
+  if ! [ -d "$taxdir" -a -r "$taxdir/names.dmp" -a -r "$taxdir/nodes.dmp" ]; then
+    echo "Cannot read input taxonomy in '$taxdir'."
+    exit 1
+  fi
+
+  # simple variables
+  ranks='species,genus,family,order,class,phylum,superkingdom'
+  pred_taxfile="$tmpdir/pred.tax"
+  pred_racolfile="$tmpdir/pred.racol"
+  taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
+  taxsqlite="$cache/ncbi-taxonomy_${taxversion}.sqlite"
+
+  # cached variables
+  gold_taxfile="$cache/gold_${goldversion}.tax"
+  gold_racolfile="$cache/gold_${goldversion}_${taxversion}.racol"
+  
+  # refresh cache
+  [ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
+  [ ! -r "$gold_taxfile" ] && binning2tsv --type taxon < "$gold_binningfile" > "$gold_taxfile"
+  [ ! -r "$gold_racolfile" ] && tax2racol --taxonomy-backend-file "$taxsqlite" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
+
+  # generate taxonomic prediction files
+  binning2tsv --type taxon < "$pred_binningfile" > "$pred_taxfile"
   tax2racol --taxonomy-backend-file "$taxsqlite" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
+  
+  # generate confusion matrix
+  confusionmatrix --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seqlenfile" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
+
+  # evaluation
+  count-depth_true_false_unknown --labels "$gold_racolfile" --predictions "$pred_racolfile" --weights "$seqlenfile" --scale .001 > absolute_counts.tsv #--with-unknown-labels, in kb
+  cmat2perbinstats < "$cmatfile" > 'perbin_stats.tsv'
+  cmat2summarystats -t 0.95 < "$cmatfile" > "summary_stats_95.tsv"
+  cmat2summarystats -t 0.99 < "$cmatfile" > "summary_stats_99.tsv"
+  cmat2heatmap --basename 'cmat_heatmap_' --format png < "$cmatfile"
+  cmat2entropy < "$cmatfile" > 'entropy.tsv'
+
+  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
+else  # unsupervised binning
+  # simple variables
+  gold_tabfile="$cache/gold_${goldversion}.tsv"
+  pred_tabfile="$tmpdir/pred.tsv"
+
+  # refresh cache
+  [ ! -r "$gold_tabfile" ] && binning2tsv --type classname < "$gold_binningfile" > "$gold_tabfile"
+
+  # generate prediction file
+  binning2tsv --type classname < "$pred_binningfile" > "$pred_tabfile"
+
+  # generate confusion matrix
+  confusionmatrix --title 'binning' --rows "$gold_tabfile" --columns "$pred_tabfile" --weights "$seqlenfile" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
+
+  # evaluation
+  cmat2heatmap --basename 'cmat_heatmap_' --format png < "$cmatfile"
+  cmat2entropy < "$cmatfile" > 'entropy.tsv'
+
+  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
 fi
-
-confusionmatrix --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seqlenfile" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
-
-# write stats
-cmat2perbinstats < "$cmatfile" > 'perbin_stats.tsv'
-
-cmat2summarystats -t 0.99 < "$cmatfile" > "summary_stats_99.tsv"
-
-count-depth_true_false_unknown --labels "$gold_racolfile" --predictions "$pred_racolfile" --weights "$seqlenfile" --scale .001 > absolute_counts.tsv #--with-unknown-labels, in kb
-
-cmat2heatmap --basename cmat_heatmap_ --format png < "$cmatfile"
-
-cp "$BBX_OPTDIR/cami-evaluate-binning/biobox.yaml" ./ 
 
 # cleanup
 test -n "$tmpdir" && rm -r "$tmpdir"
+
