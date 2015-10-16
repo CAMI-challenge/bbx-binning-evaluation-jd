@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+# convert bioboxes.org binning files (version 0.9) to a simple
+# TAB-separated files with two columns
+
+coltags = { "taxon" : "taxid", "classname" : "binid" }
+
+if __name__ == "__main__":
+  import getopt
+  from sys import stdin, stdout, stderr, argv
+  import signal
+  signal.signal(signal.SIGPIPE, signal.SIG_DFL)  # handle broken pipes
+
+  # information on usage
+  usage = "Usage: %s --type [taxon|classname]\n" % argv[0]
+
+  # parse command line options
+  try:
+    opts, args = getopt.getopt(argv[1:], "ht:", ["help", "type="])
+  except getopt.GetoptError, err:
+    # print help information and exit:
+    stderr.write(str(err)) # will print something like "option -a not recognized"
+    stderr.write(usage)
+    exit(2)
+
+  # defaults
+  matchtag = "taxid"
+  
+  # option parsing
+  for o, a in opts:
+    if o in ("-h", "--help"):
+      stdout.write(usage)
+      exit()
+    elif o in ("-t", "--type"):
+      try:
+        matchtag = coltags[a]
+      except KeyError:
+        stderr.write(usage)
+        exit(1)
+    else:
+      assert False, "unhandled option"
+
+  # process file header
+  headertags = {}
+  colindex = None
+  for line in stdin:
+    if not line:  # jump over empty lines
+      pass
+    elif line[0] == "#":  # ignore comments
+      pass
+    elif line[0] == "@":
+      if len(line) > 1 and line[1] != "@":
+        # parse tags
+        tag, val = line[1:].rstrip().split(":", 2)[:2]
+        headertags[tag] = val
+      else:
+        # process column titles
+        colnames = line[2:].rstrip().split("\t")
+        assert colnames[0].lower() == "sequenceid"
+        for i, name in enumerate(colnames):
+          if name.lower() == matchtag:
+            colindex = i
+            break
+        if colindex is None:
+          stderr.write("Column header for --type not found.\n")
+          exit(1)
+        break
+
+  # process body
+  maxsplit = colindex + 1
+  for line in stdin:
+    fields = line.rstrip().split("\t", maxsplit)
+    stdout.write("%s\t%s\n" % (fields[0], fields[colindex]))
+
