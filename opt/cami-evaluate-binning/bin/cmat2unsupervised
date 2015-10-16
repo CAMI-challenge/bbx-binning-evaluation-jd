@@ -43,7 +43,6 @@ if __name__ == "__main__":
         exit(2)
 
     ignore_class = ""
-    truncate = 1.
 
     for o, a in opts:
         if o in ("-h", "--help"):
@@ -54,7 +53,9 @@ if __name__ == "__main__":
         else:
             assert False, "unhandled option"
 
-    print "instance\ttotal entropy"
+    stdout.write("instance\tentropy\trand index\tadjusted rand index\n")
 
     for cmat in parseConfusionMatrix(stdin):
-        print "%s\t%.2f" % (cmat.title, cmat.entropy())
+        entropy = cmat.entropy()
+        rand, arand = cmat.rand()
+        stdout.write("%s\t%.2f\t%.2f\t%.2f\n" % (cmat.title, entropy, rand, arand))

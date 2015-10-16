@@ -107,7 +107,7 @@ if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
   cmat2summarystats -t 0.95 < "$cmatfile" > "summary_stats_95.tsv"
   cmat2summarystats -t 0.99 < "$cmatfile" > "summary_stats_99.tsv"
   cmat2heatmap --basename 'cmat_heatmap_' --format png < "$cmatfile"
-  cmat2entropy < "$cmatfile" > 'entropy.tsv'
+  cmat2unsupervised < "$cmatfile" > 'unsupervised_stats.tsv'
 
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
 else  # unsupervised binning
@@ -126,11 +126,10 @@ else  # unsupervised binning
 
   # evaluation
   cmat2heatmap --basename 'cmat_heatmap_' --format png < "$cmatfile"
-  cmat2entropy < "$cmatfile" > 'entropy.tsv'
+  cmat2unsupervised < "$cmatfile" > 'unsupervised_stats.tsv'
 
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
 fi
 
 # cleanup
 test -n "$tmpdir" && rm -r "$tmpdir"
-

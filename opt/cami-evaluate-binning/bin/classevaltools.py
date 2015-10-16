@@ -5,7 +5,7 @@ from itertools import count
 from math import isnan, ceil, log
 from sys import stderr
 
-from numpy import array, empty, arange, mean, std
+from numpy import array, empty, arange, mean, std, zeros
 
 
 float_nan = float('NaN')
@@ -224,7 +224,37 @@ class ConfusionMatrix:
                 totalcorrect += correct
                 totalsize += size
         return totalcorrect / float(totalsize)
+    
+    def rand(self, ignore_class=""):  # as in doi://10.1038/nmeth.3103
+        npair = lambda i: i*(i-1)  # not including division by 2 because we can often cancel it
+        all_pair_sum = 0.
+        total_sum = 0.
+        row_pair_sum = 0.
+        col_sums = zeros(self._mat.shape[0])  # ignore_class entry simply remains zero
+        for cname, col in zip(self._rownames, self._mat):
+            if cname == ignore_class:
+                continue
+            row_sum = 0.
+            for i, rname, val in zip(count(), self._colnames, col):
+                if rname == ignore_class:
+                    continue
+                all_pair_sum += npair(val)
+                row_sum += val
+                col_sums[i] += val
+            total_sum += row_sum
+            row_pair_sum += npair(row_sum)
+        col_pair_sum = npair(col_sums).sum()
+        #stderr.write("%.2f, %.2f, %.2f\n" % (all_pair_sum, row_pair_sum, col_pair_sum))
+        
+        # simple rand index
+        total_pair_sum = npair(total_sum)
+        rand = 1. + (2.0*all_pair_sum - row_pair_sum - col_pair_sum)/total_pair_sum
 
+        # adjusted rand index
+        t1 = 2*row_pair_sum*col_pair_sum/total_pair_sum
+        arand = (all_pair_sum - t1)/((row_pair_sum + col_pair_sum)/2.0 - t1)
+
+        return rand, arand
 
     def plot_matrix(self, ignore_class="", title="", dpi=300, output=None, fmt=None, extratxt=None, groupcols=("red", "blue", "grey")):
         import matplotlib
