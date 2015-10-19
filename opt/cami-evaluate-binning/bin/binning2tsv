@@ -40,13 +40,15 @@ if __name__ == "__main__":
       assert False, "unhandled option"
 
   # process file header
+  line_no = 0
   headertags = {}
   colindex = None
   for line in stdin:
-    if not line:  # jump over empty lines
+    line_no += 1
+
+    if not line or line[0] in "#\n":  # ignore empty lines and comments
       pass
-    elif line[0] == "#":  # ignore comments
-      pass
+
     elif line[0] == "@":
       if len(line) > 1 and line[1] != "@":
         # parse tags
@@ -68,6 +70,13 @@ if __name__ == "__main__":
   # process body
   maxsplit = colindex + 1
   for line in stdin:
-    fields = line.rstrip().split("\t", maxsplit)
-    stdout.write("%s\t%s\n" % (fields[0], fields[colindex]))
+    line_no += 1
 
+    if not line or line[0] in "#\n":  # ignore empty lines and comments
+      continue
+    
+    try:
+      fields = line.rstrip().split("\t", maxsplit)
+      stdout.write("%s\t%s\n" % (fields[0], fields[colindex]))
+    except IndexError:
+      stderr.write("Error parsing field %i in input line %i, skipping entry.\n" % (colindex+1, line_no) )
