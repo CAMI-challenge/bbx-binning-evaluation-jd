@@ -7,6 +7,7 @@ coltags = { "taxon" : "taxid", "classname" : "binid" }
 if __name__ == "__main__":
   import getopt
   from sys import stdin, stdout, stderr, argv
+  from itertools import count
   import signal
   signal.signal(signal.SIGPIPE, signal.SIG_DFL)  # handle broken pipes
 
@@ -56,9 +57,10 @@ if __name__ == "__main__":
         headertags[tag] = val
       else:
         # process column titles
+        assert line[1] == "@"
         colnames = line[2:].rstrip().split("\t")
         assert colnames[0].lower() == "sequenceid"
-        for i, name in enumerate(colnames):
+        for i, name in zip(count(1), colnames[1:]):
           if name.lower() == matchtag:
             colindex = i
             break
