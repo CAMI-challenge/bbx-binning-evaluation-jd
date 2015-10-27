@@ -10,7 +10,7 @@ results:
     inline: false
     value: unsupervised_stats.tsv
   - name: confusion matrix heatmap
-    description: Binning confusion matrix as heatmap with cells true (blue), false (red) and unknown (grey) positions.
+    description: Binning confusion matrix as heatmap with intensities scaled by the number of bp. Real genomes are on the y axis and predicted bins on the x axis. Unknown provenance or unbinned sequences are indicated in grey.
     type: png
     inline: false
     value: cmat_heatmap_binning.png
