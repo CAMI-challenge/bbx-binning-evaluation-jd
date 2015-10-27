@@ -20,17 +20,18 @@
 # e) Comment lines in input must start with "#" (first character)
 
 from sys import argv, stdout, stderr, stdin, exit
-from itertools import repeat, product
+from itertools import repeat, product, izip
 
 # TODO: add missing predictions to reject class (ignore_class -> reject_class)
-# TODO: limit to classes constituing at least x % of sample sequences
+
 
 # print information on usage
 def usage():
     print >> stderr, "Usage: ", argv[
         0], "--rows label.racol --columns predictions.racol [ --weights seq.length --matrix-form sparse/quadratic" \
             " --class-for-missing-predictions "" --allow-missing-rows --allow-missing-columns" \
-            " --multiclass-separator ';']"
+            " --multiclass-separator ';' --sort-columns --sort-rows]"
+
 
 # helper function
 def quadratic_axes(s1, s2, typeconv=None):
@@ -42,6 +43,7 @@ def quadratic_axes(s1, s2, typeconv=None):
     else:
         classes.sort()
     return classes, classes
+
 
 # helper function
 def sparse_axes(s1, s2, typeconv=None):
@@ -62,6 +64,7 @@ def sparse_axes(s1, s2, typeconv=None):
 # helper function
 swapzip = lambda a, b: zip(b, a)
 
+
 # simple dummy weight function counting each sequences as one
 class oneweight:
     __getitem__ = lambda self, key: 1
@@ -75,7 +78,7 @@ if __name__ == "__main__":
         opts, args = getopt.getopt(argv[1:], "h1:2:w:t:m:c:bans:",
                                    ["help", "rows=", "columns=", "weights=", "title=", "matrix-form=",
                                     "class-for-missing-columns=", "allow-missing-rows",
-                                    "allow-missing-columns", "numeric-classes", "multiclass-separator="])
+                                    "allow-missing-columns", "numeric-classes", "multiclass-separator=", "sort-rows", "sort-columns"])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -94,7 +97,9 @@ if __name__ == "__main__":
     allow_missing_predictions = False
     title = ""
     multiclass_separator = ""
-    numeric_classes = False
+    numeric_classes =False
+    sort_rows = False
+    sort_cols = False
 
     # option parsing
     for o, a in opts:
@@ -127,6 +132,10 @@ if __name__ == "__main__":
             multiclass_separator = a
         elif o in ("-n", "--numeric-classes"):
             numeric_classes = True
+        elif o in ("--sort-rows"):
+            sort_rows = True
+        elif o in ("--sort-columns"):
+            sort_cols = True
         else:
             assert False, "unhandled option"
 
@@ -265,6 +274,12 @@ if __name__ == "__main__":
             row_classes, column_classes = axes(*classes, typeconv=int)
         else:
             row_classes, column_classes = axes(*classes)
+
+        if sort_cols:  # sort columns by decreasing numbers
+            column_classes = zip(*sorted([([table.get((crow, ccol), 0) for crow in row_classes], ccol) for ccol in column_classes], reverse=True))[1]
+
+        if sort_rows:  # sort rows by decreasing numbers
+            row_classes = zip(*sorted([([table.get((crow, ccol), 0) for ccol in column_classes], crow) for crow in row_classes], reverse=True))[1]
 
         # print row header
         stdout.write("%s\t" % (title))
