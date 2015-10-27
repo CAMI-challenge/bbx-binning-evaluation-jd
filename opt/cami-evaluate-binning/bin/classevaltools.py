@@ -256,7 +256,7 @@ class ConfusionMatrix:
 
         return rand, arand
 
-    def plot_matrix(self, ignore_class="", title="", dpi=300, output=None, fmt=None, extratxt=None, groupcols=("red", "blue", "grey")):
+    def plot_matrix(self, ignore_class="", title="", dpi=300, output=None, fmt=None, extratxt=None, axislabels=True, groupcols=("red", "blue", "grey")):
         import matplotlib
         matplotlib.use('Agg')
         from matplotlib import pyplot, colors, font_manager
@@ -325,13 +325,15 @@ class ConfusionMatrix:
 
         ax.xaxis.set_ticks(range(len(self._colnames)))
         ax.xaxis.set_ticks(arange(0.5, len(self._colnames) - 1), minor=True)
-        ax.xaxis.set_ticklabels(colnames_cut, fontproperties=labelfont)
+        if axislabels:
+            ax.xaxis.set_ticklabels(colnames_cut, fontproperties=labelfont)
         #ax.xaxis.grid( True, which="minor", linestyle="-", linewidth=gridlwidth, color=gridgrey )
         ax.xaxis.tick_top()
 
         ax.yaxis.set_ticks(range(len(self._rownames)))
-        ax.yaxis.set_ticks(arange(0.5, len(self._rownames) - 1), minor=True)
-        ax.yaxis.set_ticklabels(rownames_cut, fontproperties=labelfont)
+        ax.yaxis.set_ticks(arange(0.5, len(self._rownames) - 1), minor=True)     
+        if axislabels:
+            ax.yaxis.set_ticklabels(rownames_cut, fontproperties=labelfont)
         #ax.yaxis.grid( True, which="minor", linestyle="-", linewidth=gridlwidth, color=gridgrey )
         ax.yaxis.tick_left()
 
