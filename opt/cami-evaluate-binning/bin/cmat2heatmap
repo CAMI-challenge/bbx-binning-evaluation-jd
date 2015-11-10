@@ -69,3 +69,4 @@ if __name__ == "__main__":
     for cmat in parseConfusionMatrix(stdin):
         cmat.plotMatrix(ignore_class=ignore_class, title=cmat.title, output="%s%s.%s" % (basename, cmat.title, outfmt),
                         fmt=outfmt, extratxt=description, axislabels=axislabels)
+

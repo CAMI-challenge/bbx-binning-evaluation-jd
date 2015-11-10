@@ -230,7 +230,7 @@ class ConfusionMatrix:
         all_pair_sum = 0.
         total_sum = 0.
         row_pair_sum = 0.
-        col_sums = zeros(self._mat.shape[0])  # ignore_class entry simply remains zero
+        col_sums = zeros(self._mat.shape[1])  # ignore_class entry simply remains zero
         for cname, col in zip(self._rownames, self._mat):
             if cname == ignore_class:
                 continue
@@ -311,35 +311,47 @@ class ConfusionMatrix:
         extrafont = font_manager.FontProperties(family="serif", stretch="normal", weight="normal", size="small",
                                                 style="italic")
         rownum, colnum = self._mat.shape
-        if rownum < 22 and colnum < 22:  # empirical values
-            labelfont = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light",
-                                                    size="small", style="normal")
-        else:
-            labelfont = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light",
-                                                    size="xx-small", style="normal")
+
+        labelfont = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light", size="small", style="normal")
+        labelfont_x = labelfont_y = labelfont
 
         ax = pyplot.gca()  # fig.add_subplot( 111 )
         im = ax.imshow(ca, interpolation="nearest", origin="upper", aspect="equal")
 
+        # adjust tick fonts
+        if rownum < 50:
+            labelfont_y = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light",
+                                                    size="xx-small", style="normal")
+        else:
+            yaxis.set_ticklabels('', visible=False)
+        
+        if colnum < 50:
+            labelfont_x = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light",
+                                                    size="xx-small", style="normal")
+        else:
+            xaxis.set_ticklabels('', visible=False)
+        
         ax.xaxis.set_ticks_position('both')
 
         ax.xaxis.set_ticks(range(len(self._colnames)))
         ax.xaxis.set_ticks(arange(0.5, len(self._colnames) - 1), minor=True)
-        if axislabels:
-            ax.xaxis.set_ticklabels(colnames_cut, fontproperties=labelfont)
+        ax.xaxis.set_ticklabels(colnames_cut, fontproperties=labelfont)
         #ax.xaxis.grid( True, which="minor", linestyle="-", linewidth=gridlwidth, color=gridgrey )
         ax.xaxis.tick_top()
 
         ax.yaxis.set_ticks(range(len(self._rownames)))
         ax.yaxis.set_ticks(arange(0.5, len(self._rownames) - 1), minor=True)     
-        if axislabels:
-            ax.yaxis.set_ticklabels(rownames_cut, fontproperties=labelfont)
+        ax.yaxis.set_ticklabels(rownames_cut, fontproperties=labelfont)
         #ax.yaxis.grid( True, which="minor", linestyle="-", linewidth=gridlwidth, color=gridgrey )
         ax.yaxis.tick_left()
 
         for label in ax.xaxis.get_ticklabels():
             label.set_rotation(90)
             label.set_fontproperties(labelfont)
+        
+        if not axislabels:
+            ax.set_xticklabels('', visible=False)
+            ax.set_yticklabels('', visible=False)
 
         if title:
             #ax.set_title( title )
@@ -433,3 +445,4 @@ def parse_confusion_matrix(lines):
         pass  #raises StopIteration automatically
 
 parseConfusionMatrix = parse_confusion_matrix  # TODO: consistent naming scheme (underscore); transitional for backwards compatibility
+
