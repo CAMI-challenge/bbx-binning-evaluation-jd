@@ -323,13 +323,13 @@ class ConfusionMatrix:
             labelfont_y = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light",
                                                     size="xx-small", style="normal")
         else:
-            yaxis.set_ticklabels('', visible=False)
+            ax.yaxis.set_ticklabels('', visible=False)
         
         if colnum < 50:
             labelfont_x = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light",
                                                     size="xx-small", style="normal")
         else:
-            xaxis.set_ticklabels('', visible=False)
+            ax.xaxis.set_ticklabels('', visible=False)
         
         ax.xaxis.set_ticks_position('both')
 
