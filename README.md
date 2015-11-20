@@ -1,6 +1,4 @@
-# cami-binning-eval
-
-A biobox for CAMI binning evaluation
+# A biobox for CAMI binning evaluation
 
 ## Simple instructions
       docker build -t="myuser/binning-evaluation" .
