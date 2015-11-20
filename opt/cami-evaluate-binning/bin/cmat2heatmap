@@ -29,7 +29,7 @@ from classevaltools import parseConfusionMatrix
 
 def usage():
     print >> stderr, 'Usage: ', argv[
-        0], '[--basename prefix_ | --ignore-class name_of_reject_class | --description \"some text\" --nolabels]  < matrices.cmat'
+        0], '[--basename prefix_ | --nolabels | --unsupervised | --ignore-class name_of_reject_class | --description \"some text\"]  < matrices.cmat'
 
 
 if __name__ == "__main__":
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     # parse command line options
     try:
-        opts, args = getopt.getopt(argv[1:], 'hbn:i:f:d:', ['help', 'nolabels', 'basename=', 'ignore-class=', 'format=', 'description='])
+        opts, args = getopt.getopt(argv[1:], 'hnuib:f:d:', ['help', 'nolabels', 'unsupervised', 'basename=', 'ignore-class=', 'format=', 'description='])
     except getopt.GetoptError, err:
         print str(err)  # will print something like "option -a not recognized"
         usage()
@@ -47,6 +47,7 @@ if __name__ == "__main__":
     basename = ""
     ignore_class = ""
     outfmt = "pdf"
+    colors=("red", "blue", "black")
     description = "Confusion matrix as heatmap: red=false, blue=true, grey=reject.\nColor intensity is relative to highest value in matrix."
 
     for o, a in opts:
@@ -55,6 +56,8 @@ if __name__ == "__main__":
             exit()
         elif o in ("-n", "--nolabels"):
             axislabels = False
+        elif o in ("-u", "--unsupervised"):
+            colors=("red", "red", "black")
         elif o in ("-b", "--basename"):
             basename = a
         elif o in ("-i", "--ignore-class"):
@@ -68,5 +71,5 @@ if __name__ == "__main__":
 
     for cmat in parseConfusionMatrix(stdin):
         cmat.plotMatrix(ignore_class=ignore_class, title=cmat.title, output="%s%s.%s" % (basename, cmat.title, outfmt),
-                        fmt=outfmt, extratxt=description, axislabels=axislabels)
+                        fmt=outfmt, extratxt=description, axislabels=axislabels, groupcols=colors)
 

@@ -124,7 +124,7 @@ else  # unsupervised binning
   confusionmatrix --title 'binning' --rows "$gold_tabfile" --columns "$pred_tabfile" --weights "$seqlenfile" --matrix-form sparse --allow-missing-columns --sort-columns --sort-rows > "$cmatfile"
 
   # evaluation
-  cmat2heatmap --description '' --basename 'cmat_heatmap_' --format png --nolabels < "$cmatfile"
+  cmat2heatmap --description '' --basename 'cmat_heatmap_' --format png --nolabels --unsupervised < "$cmatfile"
   cmat2unsupervised < "$cmatfile" > 'unsupervised_stats.tsv'
 
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
