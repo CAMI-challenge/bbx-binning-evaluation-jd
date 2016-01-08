@@ -313,43 +313,35 @@ class ConfusionMatrix:
         rownum, colnum = self._mat.shape
 
         labelfont = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light", size="small", style="normal")
-        labelfont_x = labelfont_y = labelfont
 
         ax = pyplot.gca()  # fig.add_subplot( 111 )
         im = ax.imshow(ca, interpolation="nearest", origin="upper", aspect="equal")
 
         # adjust tick fonts
-        if rownum < 50:
-            labelfont_y = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light",
-                                                    size="xx-small", style="normal")
-        else:
-            ax.yaxis.set_ticklabels('', visible=False)
-        
-        if colnum < 50:
-            labelfont_x = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light",
-                                                    size="xx-small", style="normal")
-        else:
-            ax.xaxis.set_ticklabels('', visible=False)
-        
+	labelfont_size = (150.0 - min(max(rownum, colnum), 150.0))*0.06  # dynamic adjustment of font size
+        #stderr.write("rownum: %i | colum: %i | font size: %.2f\n" % (rownum, colnum, labelfont_size))
+        labelfont_y = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light", size=labelfont_size, style="normal")
+        labelfont_x = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light", size=labelfont_size, style="normal")
+
         ax.xaxis.set_ticks_position('both')
 
         ax.xaxis.set_ticks(range(len(self._colnames)))
         ax.xaxis.set_ticks(arange(0.5, len(self._colnames) - 1), minor=True)
-        ax.xaxis.set_ticklabels(colnames_cut, fontproperties=labelfont)
+        ax.xaxis.set_ticklabels(colnames_cut, fontproperties=labelfont_x)
         #ax.xaxis.grid( True, which="minor", linestyle="-", linewidth=gridlwidth, color=gridgrey )
         ax.xaxis.tick_top()
 
         ax.yaxis.set_ticks(range(len(self._rownames)))
         ax.yaxis.set_ticks(arange(0.5, len(self._rownames) - 1), minor=True)     
-        ax.yaxis.set_ticklabels(rownames_cut, fontproperties=labelfont)
+        ax.yaxis.set_ticklabels(rownames_cut, fontproperties=labelfont_y)
         #ax.yaxis.grid( True, which="minor", linestyle="-", linewidth=gridlwidth, color=gridgrey )
         ax.yaxis.tick_left()
 
         for label in ax.xaxis.get_ticklabels():
             label.set_rotation(90)
-            label.set_fontproperties(labelfont)
+            label.set_fontproperties(labelfont_x)
         
-        if not axislabels:
+        if not axislabels or labelfont_size < 0.5:  # minimal font size threshold
             ax.set_xticklabels('', visible=False)
             ax.set_yticklabels('', visible=False)
 
@@ -360,7 +352,7 @@ class ConfusionMatrix:
             ax.set_xlabel(self.title, labelpad=10, fontproperties=titlefont)
         #ax.set_title( self._title )
 
-        ax.tick_params(which="minor", direction="out", length=10, width=gridlwidth, color=gridgrey)
+        ax.tick_params(which="minor", direction="out", length=labelfont_size, width=gridlwidth, color=gridgrey)
         ax.tick_params(which="major", length=0)
         #ax.title.set_y(1.05)
         #ax.margins( 0.1 )
