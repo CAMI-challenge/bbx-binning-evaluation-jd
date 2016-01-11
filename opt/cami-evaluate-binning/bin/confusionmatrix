@@ -14,8 +14,8 @@
 #
 # Conventions:
 # a) Strict one-to-one line order is not neccessary
-# b) If predictions are missing, script will exit and tell you (override params).
-# c) If labels are missing, script will exit and tell you.
+# b) If predictions are missing, script will exit and tell you (or use override cli options).
+# c) If labels are missing, script will exit and tell you (or use override cli options).
 # d) Output order of rows and columns is alphabetical
 # e) Comment lines in input must start with "#" (first character)
 
@@ -191,6 +191,7 @@ if __name__ == "__main__":
     while any(not_empty):
         process_pairs = [] #local workload
         process_weights = []
+        # I'm sorry for the following twisted programming approach!
         for fhandle, index_this, index_other, zipfnct in zip((label_filehandle, pred_filehandle), (0, 1), (1, 0),
                                                              (zip, swapzip)):
             if not_empty[index_this]:
@@ -214,11 +215,11 @@ if __name__ == "__main__":
         for pairs_list, w in zip(process_pairs, process_weights):
             for table, pair, class_names in zip(tables, pairs_list, class_names_per_table):
                 if multiclass_separator:
-                    pair = product(pair[0].split(multiclass_separator), pair[1].split(multiclass_separator))
+                    pairs = product(pair[0].split(multiclass_separator), pair[1].split(multiclass_separator))
                 else:
-                    pair = (pair,)
+                    pairs = (pair,)
 
-                for single_pair in pair:
+                for single_pair in pairs:
                     try:
                         table[single_pair] += w
                     except KeyError:
@@ -251,8 +252,11 @@ if __name__ == "__main__":
                                                     class_names_per_table):
                     # support multiple classes with separator
                     if multiclass_separator:
-                        pair = (pair[0].split(multiclass_separator), pair[1].split(multiclass_separator))
-                    for single_pair in product(*pair):
+                        pairs = product(pair[0].split(multiclass_separator), pair[1].split(multiclass_separator))
+                    else:
+                        pairs = (pair,)
+                    for single_pair in pairs:
+                        #stderr.write("missing pair add: ('%s','%s')\n" % single_pair)
                         try:
                             table[single_pair] += w
                         except KeyError:
