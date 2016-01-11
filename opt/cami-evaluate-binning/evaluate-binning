@@ -131,4 +131,11 @@ else  # unsupervised binning
 fi
 
 # cleanup
-test -n "$tmpdir" && rm -r "$tmpdir"
+if [ -n "${BBX_DBGMODE:-}" ] && [ "$BBX_DBGMODE" -gt 0 ]; then  # guarantee integer in newer base image
+  BBX_DBGDIR="$BBX_MNTDIR/debug"  # will be defined in newer base image
+  mkdir -p "$BBX_DBGDIR"  # will exist in newer base image
+  mv "$tmpdir/"* "$BBX_DBGDIR/"
+else
+  rm -r "$tmpdir"
+fi
+

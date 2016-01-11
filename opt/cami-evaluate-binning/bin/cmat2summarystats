@@ -57,7 +57,7 @@ if __name__=="__main__":
 		else:
 			assert False, "unhandled option"
 	
-	print "rank\tprecision\t precision std.\tnumber precision bins\trecall\trecall std.\tnumber real bins\taccuracy\tmisclassification rate"
+	print "rank\tprecision\t precision std.\tnumber precision bins\trecall\trecall stdev.\tnumber real bins\taccuracy\tmisclassification rate"
 	
 	for cmat in parseConfusionMatrix( stdin ):
 		
