@@ -11,6 +11,6 @@ results:
     value: unsupervised_stats.tsv
   - name: confusion matrix heatmap
     description: Binning confusion matrix as heatmap with intensities scaled by the number of bp. Real genomes are on the y axis and predicted bins on the x axis. Unknown provenance or unbinned sequences are indicated in grey.
-    type: png
+    type: svg
     inline: false
-    value: cmat_heatmap_binning.png
+    value: cmat_heatmap_binning.svg
