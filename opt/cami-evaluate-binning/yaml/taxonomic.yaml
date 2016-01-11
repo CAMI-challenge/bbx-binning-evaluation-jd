@@ -42,36 +42,36 @@ results:
     value: unsupervised_stats.tsv
   - name: species confusion matrix heatmap
     description: Species confusion matrix as heatmap with cells true (blue), false (red) and unknown (grey) positions. Real taxa are on the y axis and predicted taxon on the x axis.
-    type: png
+    type: svg
     inline: false
-    value: cmat_heatmap_species.png
+    value: cmat_heatmap_species.svg
   - name: genus confusion matrix heatmap
     description: Genus confusion matrix as heatmap with cells true (blue), false (red) and unknown (grey) positions. Real taxa are on the y axis and predicted taxon on the x axis.
-    type: png
+    type: svg
     inline: false
-    value: cmat_heatmap_genus.png
+    value: cmat_heatmap_genus.svg
   - name: family confusion matrix heatmap
     description: Family confusion matrix as heatmap with cells true (blue), false (red) and unknown (grey) positions. Real taxa are on the y axis and predicted taxon on the x axis.
-    type: png
+    type: svg
     inline: false
-    value: cmat_heatmap_family.png
+    value: cmat_heatmap_family.svg
   - name: Order confusion matrix heatmap
     description: order confusion matrix as heatmap with cells true (blue), false (red) and unknown (grey) positions. Real taxa are on the y axis and predicted taxon on the x axis.
-    type: png
+    type: svg
     inline: false
-    value: cmat_heatmap_order.png
+    value: cmat_heatmap_order.svg
   - name: class confusion matrix heatmap
     description: Class confusion matrix as heatmap with cells true (blue), false (red) and unknown (grey) positions. Real taxa are on the y axis and predicted taxon on the x axis.
-    type: png
+    type: svg
     inline: false
-    value: cmat_heatmap_class.png
+    value: cmat_heatmap_class.svg
   - name: phylum confusion matrix heatmap
     description: Phylum confusion matrix as heatmap with cells true (blue), false (red) and unknown (grey) positions. Real taxa are on the y axis and predicted taxon on the x axis.
-    type: png
+    type: svg
     inline: false
-    value: cmat_heatmap_phylum.png
+    value: cmat_heatmap_phylum.svg
   - name: Superkingdom confusion matrix heatmap.
     description: superkingdom/domaion confusion matrix as heatmap with cells true (blue), false (red) and unknown (grey) positions. Real taxa are on the y axis and predicted taxon on the x axis.
-    type: png
+    type: svg
     inline: false
-    value: cmat_heatmap_superkingdom.png
+    value: cmat_heatmap_superkingdom.svg
