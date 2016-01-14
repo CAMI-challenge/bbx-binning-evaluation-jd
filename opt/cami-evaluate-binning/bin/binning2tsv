@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-# convert bioboxes.org binning files (version 0.9) to a simple
+# Convert bioboxes.org binning files (version 0.9) to a simple
 # TAB-separated files with two columns
+# Author: johannes.droge@uni-duesseldorf.de
 
 coltags = { "taxon" : "taxid", "classname" : "binid" }
 
