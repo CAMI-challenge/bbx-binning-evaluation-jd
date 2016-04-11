@@ -68,10 +68,16 @@ if __name__ == "__main__":
         tmpstore = []
         for name, psize, pcorrect in cmat.precision_freqs():
             if name != ignore_class:
-                prec = pcorrect / float(psize)
+                if float(psize) == 0:
+                    prec = float('nan')
+                else:
+                    prec = pcorrect / float(psize)
                 rsize, rcorrect = cmat.recall_freq(name)
                 assert rcorrect == pcorrect
-                rec = rcorrect / float(rsize)
+                if float(rsize) == 0:
+                    rec = float('nan')
+                else:
+                    rec = rcorrect / float(rsize)
                 totalsize += psize
                 tmpstore.append((psize, rsize, prec, rec, name))
             else:
