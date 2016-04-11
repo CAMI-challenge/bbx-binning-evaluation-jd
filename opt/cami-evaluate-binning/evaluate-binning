@@ -17,7 +17,7 @@
 set -o errexit
 set -o nounset
 
-required_programs="ncbitax2sqlite tax2racol confusionmatrix cmat2perbinstats cmat2summarystats fasta-seqlen sort md5sum binning2tsv"
+required_programs="ncbitax2sqlite tax2racol confusionmatrix cmat2perbinstats cmat2summarystats fasta-seqlen fastq-seqlen sort md5sum binning2tsv"
 # Check for required programs
 for cmd in $required_programs; do
   if test -z "$(which "$cmd")"; then
@@ -66,8 +66,27 @@ tmpdir="$(mktemp -d)"
 cmatfile="$tmpdir/pred.cmat"
 
 # general refresh cache
-[ ! -r "$seqlenfile" ] && cat $fastafile | fasta-seqlen > "$seqlenfile"
-
+if [[ $fastafile == *.gz ]]; then # compressed
+	if [[ $bbx_arguments_sequences_id == "fastq" ]]; then
+		[ ! -r "$seqlenfile" ] && awk 'NR % 4 == 1 || NR % 4 == 2' <(gzip -dc $fastafile) | fastq-seqlen > "$seqlenfile"
+	elif [ $bbx_arguments_sequences_id == "fasta" ]; then
+		[ ! -r "$seqlenfile" ] && zcat $fastafile | fasta-seqlen > "$seqlenfile"
+	else
+		echo "Unknown: $bbx_arguments_sequences_id"
+		exit 1
+	fi
+else # raw file
+	if [[ $bbx_arguments_sequences_id == "fastq" ]]; then
+		#echo "fastq"
+		[ ! -r "$seqlenfile" ] && awk 'NR % 4 == 1 || NR % 4 == 2' $fastafile | fastq-seqlen > "$seqlenfile"
+	elif [ $bbx_arguments_sequences_id == "fasta" ]; then
+		#echo "fasta"
+		[ ! -r "$seqlenfile" ] && cat $fastafile | fasta-seqlen > "$seqlenfile"
+	else # fasta
+		echo "Unknown: $bbx_arguments_sequences_id"
+		exit 1
+	fi
+fi
 
 if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
   taxdir="$bbx_arguments_databases_taxonomy_path"
