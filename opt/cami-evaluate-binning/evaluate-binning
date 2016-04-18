@@ -109,7 +109,7 @@ if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
   cmat2unsupervised < "$cmatfile" > 'unsupervised_stats.tsv'
 
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
-else  # unsupervised binning
+elif [ "$eval_mode" == "unsupervised" ]; then # unsupervised binning
   # simple variables
   gold_tabfile="$cache/gold_${goldversion}.tsv"
   pred_tabfile="$tmpdir/pred.tsv"
@@ -128,6 +128,28 @@ else  # unsupervised binning
   cmat2unsupervised < "$cmatfile" > 'unsupervised_stats.tsv'
 
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
+elif [ "$eval_mode" == "hybrid" ]; then # hybrid binning
+  # simple variables
+  gold_tabfile="$cache/gold_${goldversion}.tsv"
+  pred_tabfile="$tmpdir/pred.tsv"
+
+  # refresh cache
+  [ ! -r "$gold_tabfile" ] && binning2tsv --type classname < "$gold_binningfile" > "$gold_tabfile"
+
+  # generate prediction file
+  binning2tsv --type taxon < "$pred_binningfile" > "$pred_tabfile"
+
+  # generate confusion matrix
+  confusionmatrix --title 'binning' --rows "$gold_tabfile" --columns "$pred_tabfile" --weights "$seqlenfile" --matrix-form sparse --allow-missing-columns --sort-columns --sort-rows > "$cmatfile"
+
+  # evaluation
+  cmat2heatmap --description '' --basename 'cmat_heatmap_' --format svg --nolabels --unsupervised < "$cmatfile"
+  cmat2unsupervised < "$cmatfile" > 'unsupervised_stats.tsv'
+
+  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
+else
+  echo "Bad eval_mode"
+  exit 1
 fi
 
 # cleanup
