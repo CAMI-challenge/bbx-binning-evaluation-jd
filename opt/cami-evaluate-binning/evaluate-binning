@@ -101,20 +101,20 @@ if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
   pred_taxfile="$tmpdir/pred.tax"
   pred_racolfile="$tmpdir/pred.racol"
   taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
-  taxsqlite="$cache/ncbi-taxonomy_${taxversion}.sqlite"
+  #taxsqlite="$cache/ncbi-taxonomy_${taxversion}.sqlite"
 
   # cached variables
   gold_taxfile="$cache/gold_${goldversion}.tax"
   gold_racolfile="$cache/gold_${goldversion}_${taxversion}.racol"
   
   # refresh cache
-  [ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
+  #[ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
   [ ! -r "$gold_taxfile" ] && binning2tsv --type taxon < "$gold_binningfile" > "$gold_taxfile"
-  [ ! -r "$gold_racolfile" ] && tax2racol --taxonomy-backend-file "$taxsqlite" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
+  [ ! -r "$gold_racolfile" ] && tax2racol -t "$taxdir" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
 
   # generate taxonomic prediction files
   binning2tsv --type taxon < "$pred_binningfile" > "$pred_taxfile"
-  tax2racol --taxonomy-backend-file "$taxsqlite" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
+  tax2racol -t "$taxdir" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
   
   # generate confusion matrix
   confusionmatrix --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seqlenfile" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
@@ -179,4 +179,3 @@ if [ -n "${BBX_DBGMODE:-}" ] && [ "$BBX_DBGMODE" -gt 0 ]; then  # guarantee inte
 else
   rm -r "$tmpdir"
 fi
-
