@@ -63,7 +63,6 @@ seqlenfile="$cache/gold_${goldversion}.seqlen"
 
 # general temporary variables
 tmpdir="$(mktemp -d)"
-cmatfile="$tmpdir/pred.cmat"
 
 # general refresh cache
 if [[ $fastafile == *.gz ]]; then # compressed
@@ -88,9 +87,14 @@ else # raw file
 	fi
 fi
 
-if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
+func_supervised ()
+{
+  gold_bin_file=$1
+  query_bin_file=$2
+  prefix=$3
   taxdir="$bbx_arguments_databases_taxonomy_path"
   
+
   if ! [ -d "$taxdir" -a -r "$taxdir/names.dmp" -a -r "$taxdir/nodes.dmp" ]; then
     echo "Cannot read input taxonomy in '$taxdir'."
     exit 1
@@ -98,18 +102,18 @@ if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
 
   # simple variables
   ranks='species,genus,family,order,class,phylum,superkingdom'
-  pred_taxfile="$tmpdir/pred.tax"
-  pred_racolfile="$tmpdir/pred.racol"
+  pred_taxfile="$tmpdir/${prefix}pred.tax"
+  pred_racolfile="$tmpdir/${prefix}pred.racol"
   taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
   #taxsqlite="$cache/ncbi-taxonomy_${taxversion}.sqlite"
 
   # cached variables
-  gold_taxfile="$cache/gold_${goldversion}.tax"
-  gold_racolfile="$cache/gold_${goldversion}_${taxversion}.racol"
+  gold_taxfile="$cache/${prefix}gold_${goldversion}.tax"
+  gold_racolfile="$cache/${prefix}gold_${goldversion}_${taxversion}.racol"
   
   # refresh cache
   #[ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
-  [ ! -r "$gold_taxfile" ] && binning2tsv --type taxon < "$gold_binningfile" > "$gold_taxfile"
+  [ ! -r "$gold_taxfile" ] && binning2tsv --type taxon < "$gold_bin_file" > "$gold_taxfile"
   [ ! -r "$gold_racolfile" ] && tax2racol -t "$taxdir" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
 
   # generate taxonomic prediction files
@@ -117,54 +121,83 @@ if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
   tax2racol -t "$taxdir" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
   
   # generate confusion matrix
+  cmatfile="$tmpdir/${prefix}pred.cmat"
   confusionmatrix --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seqlenfile" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
 
   # evaluation
-  count-depth_true_false_unknown --labels "$gold_racolfile" --predictions "$pred_racolfile" --weights "$seqlenfile" --scale .001 > absolute_counts.tsv #--with-unknown-labels, in kb
-  cmat2perbinstats < "$cmatfile" > 'perbin_stats.tsv'
-  cmat2summarystats -t 0.95 < "$cmatfile" > "summary_stats_95.tsv"
-  cmat2summarystats -t 0.99 < "$cmatfile" > "summary_stats_99.tsv"
-  cmat2heatmap --description '' --basename 'cmat_heatmap_' --format svg < "$cmatfile"
-  cmat2unsupervised < "$cmatfile" > 'unsupervised_stats.tsv'
+  count-depth_true_false_unknown --labels "$gold_racolfile" --predictions "$pred_racolfile" --weights "$seqlenfile" --scale .001 > "${prefix}absolute_counts.tsv" #--with-unknown-labels, in kb
+  cmat2perbinstats < "$cmatfile" > "${prefix}perbin_stats.tsv"
+  cmat2summarystats -t 0.95 < "$cmatfile" > "${prefix}summary_stats_95.tsv"
+  cmat2summarystats -t 0.99 < "$cmatfile" > "${prefix}summary_stats_99.tsv"
+  cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg < "$cmatfile"
+  cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_stats.tsv"
+}
 
+func_unsupervised ()
+{
+  gold_bin_file=$1
+  query_bin_file=$2
+  btype=$3
+  prefix=$4
+  # simple variables
+  gold_tabfile="$cache/${prefix}gold_${goldversion}.tsv"
+  pred_tabfile="$tmpdir/${prefix}pred.tsv"
+
+  # refresh cache
+  [ ! -r "$gold_tabfile" ] && binning2tsv --type classname < "$gold_binningfile" > "$gold_tabfile"
+
+  # generate prediction file
+  binning2tsv --type "$btype" < "$pred_binningfile" > "$pred_tabfile"
+
+  # generate confusion matrix
+  cmatfile="$tmpdir/${prefix}pred.cmat"
+  confusionmatrix --title 'binning' --rows "$gold_tabfile" --columns "$pred_tabfile" --weights "$seqlenfile" --matrix-form sparse --allow-missing-columns --sort-columns --sort-rows > "$cmatfile"
+
+  # evaluation
+  cmat2heatmap --description '' --basename 'cmat_heatmap_' --format svg --nolabels --unsupervised < "$cmatfile"
+  cmat2unsupervised < "$cmatfile" > 'unsupervised_stats.tsv'
+}
+
+if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
+  func_supervised "$gold_binningfile" "$pred_binningfile" ""
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
+elif [ "$eval_mode" == "taxonomic_novelties" ]; then  # taxonomic binning
+  prefix=0
+  SPLIT_WORK="$tmpdir/split_work.tsv"
+  sort_by_novelty.py \
+  -n /tmp/test/novelty.tsv -g "$gold_binningfile" -q "$pred_binningfile" \
+  -o "$tmpdir" -tax > "$SPLIT_WORK"
+  echo "---" > "biobox.yaml"
+  echo "version: 0.10.0" >> "biobox.yaml"
+  echo "results:" >> "biobox.yaml"
+  template="$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic_template.yaml"
+  while read novelty, query_path, gold_path;
+  do
+    func_supervised "$gold_path" "$query_path" "${prefix}_"
+    format_text.py "$template" "${prefix}_" "$novelty" >> "biobox.yaml"
+    prefix=$((prefix+1))
+  done < "$SPLIT_WORK"
 elif [ "$eval_mode" == "unsupervised" ]; then # unsupervised binning
-  # simple variables
-  gold_tabfile="$cache/gold_${goldversion}.tsv"
-  pred_tabfile="$tmpdir/pred.tsv"
-
-  # refresh cache
-  [ ! -r "$gold_tabfile" ] && binning2tsv --type classname < "$gold_binningfile" > "$gold_tabfile"
-
-  # generate prediction file
-  binning2tsv --type classname < "$pred_binningfile" > "$pred_tabfile"
-
-  # generate confusion matrix
-  confusionmatrix --title 'binning' --rows "$gold_tabfile" --columns "$pred_tabfile" --weights "$seqlenfile" --matrix-form sparse --allow-missing-columns --sort-columns --sort-rows > "$cmatfile"
-
-  # evaluation
-  cmat2heatmap --description '' --basename 'cmat_heatmap_' --format svg --nolabels --unsupervised < "$cmatfile"
-  cmat2unsupervised < "$cmatfile" > 'unsupervised_stats.tsv'
-
+  func_unsupervised "$gold_binningfile" "$pred_binningfile" "classname" ""
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
+elif [ "$eval_mode" == "unsupervised_novelties" ]; then # unsupervised binning
+  prefix=0
+  SPLIT_WORK="$tmpdir/split_work.tsv"
+  sort_by_novelty.py \
+  -n /tmp/test/novelty.tsv -g "$gold_binningfile" -q "$pred_binningfile" \
+  -o "$tmpdir" -tax > "$SPLIT_WORK"
+  echo "---" > "biobox.yaml"
+  echo "version: 0.10.0" >> "biobox.yaml"
+  echo "results:" >> "biobox.yaml"
+  template="$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised_template.yaml"
+  while read novelty, query_path, gold_path;
+  do
+    func_unsupervised "$gold_path" "$query_path" "classname" "${prefix}_"
+    format_text.py "$template" "${prefix}_" "$novelty" >> "biobox.yaml"
+    prefix=$((prefix+1))
+  done < "$SPLIT_WORK"
 elif [ "$eval_mode" == "hybrid" ]; then # hybrid binning
-  # simple variables
-  gold_tabfile="$cache/gold_${goldversion}.tsv"
-  pred_tabfile="$tmpdir/pred.tsv"
-
-  # refresh cache
-  [ ! -r "$gold_tabfile" ] && binning2tsv --type classname < "$gold_binningfile" > "$gold_tabfile"
-
-  # generate prediction file
-  binning2tsv --type taxon < "$pred_binningfile" > "$pred_tabfile"
-
-  # generate confusion matrix
-  confusionmatrix --title 'binning' --rows "$gold_tabfile" --columns "$pred_tabfile" --weights "$seqlenfile" --matrix-form sparse --allow-missing-columns --sort-columns --sort-rows > "$cmatfile"
-
-  # evaluation
-  cmat2heatmap --description '' --basename 'cmat_heatmap_' --format svg --nolabels --unsupervised < "$cmatfile"
-  cmat2unsupervised < "$cmatfile" > 'unsupervised_stats.tsv'
-
+  func_unsupervised "$gold_binningfile" "$pred_binningfile" "taxon" ""
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
 else
   echo "Bad eval_mode"
