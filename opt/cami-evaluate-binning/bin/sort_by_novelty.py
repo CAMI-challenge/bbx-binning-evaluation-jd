@@ -58,7 +58,6 @@ def parse_cami_format(file_path, required_columns, key_column=None):
 
 
 def split_seq_file(sid_to_novelty, file_path_input, out_dir):
-	print "splitting sequence length file"
 	dict_file_handlers = {}
 	dict_file_paths = {}
 	with open(file_path_input) as read_handler:
