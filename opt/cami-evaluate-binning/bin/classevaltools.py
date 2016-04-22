@@ -248,8 +248,8 @@ class ConfusionMatrix:
         
         total_pair_sum = npair(total_sum)
         if total_pair_sum == 0:
-            rand = float('na')
-            arand = float('na')
+            rand = float('nan')
+            arand = float('nan')
         else:
             # simple rand index
             rand = 1. + (2.0*all_pair_sum - row_pair_sum - col_pair_sum)/total_pair_sum
