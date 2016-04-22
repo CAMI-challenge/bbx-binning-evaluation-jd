@@ -94,7 +94,7 @@ func_supervised ()
   query_bin_file=$2
   seq_len_file=$3
   prefix=$4
-  echo "supervised g:$gold_bin_file q:$query_bin_file"
+  echo "supervised g:${gold_bin_file} q:$query_bin_file"
   taxdir="$bbx_arguments_databases_taxonomy_path"
 
   if ! [ -d "$taxdir" -a -r "$taxdir/names.dmp" -a -r "$taxdir/nodes.dmp" ]; then
@@ -115,7 +115,7 @@ func_supervised ()
   
   # refresh cache
   #[ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
-  [ ! -r "$gold_taxfile" ] && binning2tsv --type taxon < "$gold_bin_file" > "$gold_taxfile"
+  [ ! -r "$gold_taxfile" ] && binning2tsv --type taxon < "${gold_bin_file}" > "$gold_taxfile"
   [ ! -r "$gold_racolfile" ] && tax2racol -t "$taxdir" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
 
   # generate taxonomic prediction files
@@ -165,9 +165,15 @@ func_unsupervised ()
 if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
   func_supervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" ""
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
+elif [ "$eval_mode" == "unsupervised" ]; then # unsupervised binning
+  func_unsupervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" "classname" ""
+  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
+elif [ "$eval_mode" == "hybrid" ]; then # hybrid binning
+  func_unsupervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" "taxon" ""
+  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
 elif [ "$eval_mode" == "taxonomic_novelties" ]; then  # taxonomic binning
-  echo "taxonomic_novelties"
-  prefix=0
+  # echo "taxonomic_novelties"
+  prefix_index=0
   SPLIT_WORK="$tmpdir/split_work.tsv"
   sort_by_novelty.py \
   -n "$BBX_OPTDIR/novelty_complete.tsv" -g "$gold_binningfile" -q "$pred_binningfile" -s "$seqlenfile" \
@@ -179,16 +185,13 @@ elif [ "$eval_mode" == "taxonomic_novelties" ]; then  # taxonomic binning
   while IFS=$'\t' read novelty gold_path query_path seqlen_file;
   do
     #echo "$gold_path $query_path $seqlen_file"
-    func_supervised "$gold_path" "$query_path" "$seqlen_file" "${prefix}_"
-    format_text.py "$template" "${prefix}_" "$novelty" >> "biobox.yaml"
-    prefix=$((prefix+1))
+    func_supervised "$gold_path" "$query_path" "$seqlen_file" "${prefix_index}_"
+    format_text.py "$template" "${prefix_index}_" "$novelty" >> "biobox.yaml"
+    prefix_index=$((prefix_index+1))
   done < "$SPLIT_WORK"
-elif [ "$eval_mode" == "unsupervised" ]; then # unsupervised binning
-  func_unsupervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" "classname" ""
-  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
 elif [ "$eval_mode" == "unsupervised_novelties" ]; then # unsupervised binning
-  echo "unsupervised_novelties"
-  prefix=0
+  # echo "unsupervised_novelties"
+  prefix_index=0
   SPLIT_WORK="$tmpdir/split_work.tsv"
   sort_by_novelty.py \
   -n "$BBX_OPTDIR/novelty_complete.tsv" -g "$gold_binningfile" -q "$pred_binningfile" -s "$seqlenfile" \
@@ -199,13 +202,10 @@ elif [ "$eval_mode" == "unsupervised_novelties" ]; then # unsupervised binning
   template="$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised_template.yaml"
   while IFS=$'\t' read novelty gold_path query_path seqlen_file;
   do
-    func_unsupervised "$gold_path" "$query_path" "$seqlen_file" "classname" "${prefix}_"
-    format_text.py "$template" "${prefix}_" "$novelty" >> "biobox.yaml"
-    prefix=$((prefix+1))
+    func_unsupervised "$gold_path" "$query_path" "$seqlen_file" "classname" "${prefix_index}_"
+    format_text.py "$template" "${prefix_index}_" "$novelty" >> "biobox.yaml"
+    prefix_index=$((prefix+1))
   done < "$SPLIT_WORK"
-elif [ "$eval_mode" == "hybrid" ]; then # hybrid binning
-  func_unsupervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" "taxon" ""
-  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
 else
   echo "Bad eval_mode"
   exit 1
