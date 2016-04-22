@@ -63,7 +63,7 @@ seqlenfile="$cache/gold_${goldversion}.seqlen"
 
 # general temporary variables
 tmpdir="$(mktemp -d -p $cache)"
-echo "Temp dir: '$tmpdir'"
+# echo "Temp dir: '$tmpdir'"
 
 # general refresh cache
 if [[ $fastafile == *.gz ]]; then # compressed
@@ -94,7 +94,7 @@ func_supervised ()
   query_bin_file=$2
   seq_len_file=$3
   prefix=$4
-  echo "supervised g:${gold_bin_file} q:$query_bin_file"
+  # echo "supervised g:${gold_bin_file} q:$query_bin_file"
   taxdir="$bbx_arguments_databases_taxonomy_path"
 
   if ! [ -d "$taxdir" -a -r "$taxdir/names.dmp" -a -r "$taxdir/nodes.dmp" ]; then
@@ -142,7 +142,7 @@ func_unsupervised ()
   seq_len_file=$3
   btype=$4
   prefix=$5
-  echo "unsupervised g:$gold_bin_file q:$query_bin_file"
+  # echo "unsupervised g:$gold_bin_file q:$query_bin_file"
   # simple variables
   gold_tabfile="$cache/${prefix}gold_${goldversion}.tsv"
   pred_tabfile="$tmpdir/${prefix}pred.tsv"
