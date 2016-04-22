@@ -113,9 +113,10 @@ class ConfusionMatrix:
             totalsize += size
             # stderr.write("%s has entropy %.2f\n" % (name, hcl))
             h += hcl
-        if totalsize == 0:
+        tmp = totalsize*log(l, 2.)
+        if tmp == 0:
             return float_nan
-        return h/(totalsize*log(l, 2.))
+        return h/tmp
 
     def misclassification_rate(self, ignore_class=""):
         try:
