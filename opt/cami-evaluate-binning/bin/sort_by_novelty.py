@@ -18,7 +18,7 @@ def read_novelties(path_novelty):
 	return gid_to_novelty
 
 
-def read_cami_format(file_path, required_columns, key_column=None):
+def parse_cami_format(file_path, required_columns, key_column=None):
 	"""
 
 	@type file_path: str
@@ -28,7 +28,6 @@ def read_cami_format(file_path, required_columns, key_column=None):
 	"""
 	if key_column is None:
 		key_column = "SEQUENCEID"
-	cami_dict = {}
 	with open(file_path) as read_handler:
 		column_names = []
 		for line in read_handler:
@@ -49,11 +48,103 @@ def read_cami_format(file_path, required_columns, key_column=None):
 			if line.startswith('#') or len(line) == 0:
 				continue
 			row = line.split('\t')
-			cami_dict[row[key_index]] = {}
+			# cami_row_dict[row[key_index]] = {}
+			cami_row_dict = {}
 			for column in required_columns:
 				value_index = column_names.index(column)
-				cami_dict[row[key_index]][column] = row[value_index]
-	return cami_dict
+				cami_row_dict[column] = row[value_index]
+			yield row[key_index], cami_row_dict
+# 	return cami_dict
+
+
+def split_seq_file(sid_to_novelty, file_path_input, out_dir):
+	print "splitting sequence length file"
+	dict_file_handlers = {}
+	dict_file_paths = {}
+	with open(file_path_input) as read_handler:
+		for line_seq_length in read_handler:
+			sid, _ = line_seq_length.split('\t')
+			novelty = sid_to_novelty[sid]
+			if novelty not in dict_file_handlers:
+				file_path = tempfile.mktemp(prefix="seq_len_", dir=out_dir)
+				dict_file_paths[novelty] = file_path
+				dict_file_handlers[novelty] = open(file_path, 'w')
+			dict_file_handlers[novelty].write(line_seq_length)
+
+	for novelty in dict_file_handlers:
+		dict_file_handlers[novelty].close()
+	return dict_file_paths
+
+
+def split_gold_file(sid_to_novelty, file_path_input, out_dir):
+	cami_format_header_gold = "@Version:0.9.1\n\n@@SEQUENCEID\tTAXID\tBINID\n"
+	dict_file_handlers = {}
+	dict_file_paths = {}
+	for sid, columns in parse_cami_format(file_path_input, ["SEQUENCEID", "TAXID", "BINID"], "SEQUENCEID"):
+		bid = columns["BINID"]
+		tid = columns["TAXID"]
+		novelty = sid_to_novelty[sid]
+		if novelty not in dict_file_handlers:
+			file_path_gold = tempfile.mktemp(prefix="gold_", dir=out_dir)
+			dict_file_paths[novelty] = file_path_gold
+			dict_file_handlers[novelty] = open(file_path_gold, 'w')
+			dict_file_handlers[novelty].write(cami_format_header_gold)
+		dict_file_handlers[novelty].write("{sid}\t{tid}\t{bid}\n".format(sid=sid, tid=tid, bid=bid))
+
+	for novelty in dict_file_handlers:
+		dict_file_handlers[novelty].close()
+	return dict_file_paths
+
+
+def split_query_file(sid_to_novelty, file_path_input, out_dir, is_supervised, novelties):
+	bin_column = "BINID"
+	if is_supervised:
+		bin_column = "TAXID"
+	cami_format_header_query = "@Version:0.9.1\n\n@@SEQUENCEID\t{}\n".format(bin_column)
+	dict_file_handlers = {}
+	dict_file_paths = {}
+
+	# making sure all novelty files will exist:
+	for novelty in novelties:
+		file_path_query = tempfile.mktemp(prefix="query_", dir=out_dir)
+		dict_file_paths[novelty] = file_path_query
+		dict_file_handlers[novelty] = open(file_path_query, 'w')
+		dict_file_handlers[novelty].write(cami_format_header_query)
+
+	for sid, columns in parse_cami_format(file_path_input, ["SEQUENCEID", bin_column], "SEQUENCEID"):
+		novelty = sid_to_novelty[sid]
+		dict_file_handlers[novelty].write("{sid}\t{bid}\n".format(sid=sid, bid=columns[bin_column]))
+
+	for novelty in dict_file_handlers:
+		dict_file_handlers[novelty].close()
+	return dict_file_paths
+
+
+def main(path_novelty, path_gold, path_query, path_seq_length, is_supervised, out_dir):
+	assert path_novelty is not None, "Need novelty file"
+	assert path_gold is not None, "Need gold standard file"
+	assert path_query is not None, "Need query file"
+	assert path_seq_length is not None, "Need seq length file"
+	assert out_dir is not None, "Need output dir"
+
+	sid_to_novelty = {}
+	gid_to_novelty = read_novelties(path_novelty)
+	for sid, columns in parse_cami_format(path_gold, ["SEQUENCEID", "TAXID", "BINID"], "SEQUENCEID"):
+		sid_to_novelty[sid] = gid_to_novelty[columns["BINID"]]
+	del gid_to_novelty
+
+	novelty_to_file_paths_seq_length = split_seq_file(sid_to_novelty, path_seq_length, out_dir)
+	novelty_to_file_paths_gold = split_gold_file(sid_to_novelty, path_gold, out_dir)
+	novelties = novelty_to_file_paths_gold.keys()
+	novelty_to_file_paths_query = split_query_file(sid_to_novelty, path_query, out_dir, is_supervised, novelties)
+
+	for novelty in novelties:
+		sys.stdout.write("{novelty}\t{gold}\t{query}\t{seql}\n".format(
+			novelty=novelty,
+			gold=novelty_to_file_paths_gold[novelty],
+			query=novelty_to_file_paths_query[novelty],
+			seql=novelty_to_file_paths_seq_length[novelty])
+		)
 
 
 def get_parser_options(args=None, version="Prototype"):
@@ -110,66 +201,6 @@ def get_parser_options(args=None, version="Prototype"):
 		return parser.parse_args()
 	else:
 		return parser.parse_args(args)
-
-
-def main(path_novelty, path_gold, path_query, path_seq_length, is_supervised, out_dir):
-	assert path_novelty is not None, "Need novelty file"
-	assert path_gold is not None, "Need gold standard file"
-	assert path_query is not None, "Need query file"
-	assert path_seq_length is not None, "Need seq length file"
-	assert out_dir is not None, "Need output dir"
-
-	query_bin_column = "BINID"
-	if is_supervised:
-		query_bin_column = "TAXID"
-	gid_to_novelty = read_novelties(path_novelty)
-	cami_dict_gold = read_cami_format(path_gold, ["SEQUENCEID", "TAXID", "BINID"], "SEQUENCEID")
-	cami_dict_query = read_cami_format(path_query, ["SEQUENCEID", query_bin_column], "SEQUENCEID")
-
-	cami_format_header_query = "@Version:0.9.1\n\n@@SEQUENCEID\t{}\n".format(query_bin_column)
-	cami_format_header_gold = "@Version:0.9.1\n\n@@SEQUENCEID\tTAXID\tBINID\n"
-	novelty_to_out_file_handler_query = {}
-	novelty_to_out_file_paths_query = {}
-	novelty_to_out_file_handler_gold = {}
-	seq_length_file_paths = {}
-	seq_length_file_handler = {}
-	novelty_to_out_file_paths_gold = {}
-	with open(path_seq_length) as read_handler_seq_len:
-		for line_seq_length in read_handler_seq_len:
-			sid, _ = line_seq_length.split('\t')
-			bid_gold = cami_dict_gold[sid]["BINID"]
-			tid_gold = cami_dict_gold[sid]["TAXID"]
-			bin_query = None
-			if sid in cami_dict_query:
-				bin_query = cami_dict_query[sid][query_bin_column]
-			novelty = gid_to_novelty[bid_gold]
-			if novelty not in novelty_to_out_file_handler_query:
-				file_path_query = tempfile.mktemp(prefix="query_", dir=out_dir)
-				file_path_gold = tempfile.mktemp(prefix="gold_", dir=out_dir)
-				file_path_seq_length = tempfile.mktemp(prefix="seq_len_", dir=out_dir)
-				novelty_to_out_file_paths_query[novelty] = file_path_query
-				novelty_to_out_file_paths_gold[novelty] = file_path_gold
-				seq_length_file_paths[novelty] = file_path_seq_length
-				novelty_to_out_file_handler_query[novelty] = open(file_path_query, 'w')
-				novelty_to_out_file_handler_gold[novelty] = open(file_path_gold, 'w')
-				seq_length_file_handler[novelty] = open(file_path_seq_length, 'w')
-				novelty_to_out_file_handler_query[novelty].write(cami_format_header_query)
-				novelty_to_out_file_handler_gold[novelty].write(cami_format_header_gold)
-			if bin_query is not None:
-				novelty_to_out_file_handler_query[novelty].write("{sid}\t{tid}\n".format(sid=sid, tid=bin_query))
-			novelty_to_out_file_handler_gold[novelty].write("{sid}\t{tid}\t{bid}\n".format(sid=sid, tid=tid_gold, bid=bid_gold))
-			seq_length_file_handler[novelty].write(line_seq_length)
-
-	for novelty in novelty_to_out_file_handler_query:
-		novelty_to_out_file_handler_query[novelty].close()
-		novelty_to_out_file_handler_gold[novelty].close()
-		seq_length_file_handler[novelty].close()
-		sys.stdout.write("{novelty}\t{gold}\t{query}\t{seql}\n".format(
-			novelty=novelty,
-			query=novelty_to_out_file_paths_query[novelty],
-			gold=novelty_to_out_file_paths_gold[novelty],
-			seql=seq_length_file_paths[novelty])
-		)
 
 
 if __name__ == "__main__":
