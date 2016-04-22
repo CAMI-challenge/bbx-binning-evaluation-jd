@@ -63,6 +63,7 @@ seqlenfile="$cache/gold_${goldversion}.seqlen"
 
 # general temporary variables
 tmpdir="$(mktemp -d -p $cache)"
+chmod 755 "$tmpdir"
 # echo "Temp dir: '$tmpdir'"
 
 # general refresh cache
