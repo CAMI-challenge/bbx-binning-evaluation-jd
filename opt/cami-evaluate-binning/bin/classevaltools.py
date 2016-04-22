@@ -248,14 +248,12 @@ class ConfusionMatrix:
         
         total_pair_sum = npair(total_sum)
         if total_pair_sum == 0:
-            rand = float('nan')
-            arand = float('nan')
-        else:
-            # simple rand index
-            rand = 1. + (2.0*all_pair_sum - row_pair_sum - col_pair_sum)/total_pair_sum
-            # adjusted rand index
-            t1 = 2*row_pair_sum*col_pair_sum/total_pair_sum
-            arand = (all_pair_sum - t1)/((row_pair_sum + col_pair_sum)/2.0 - t1)
+            return float_nan, float_nan
+        # simple rand index
+        rand = 1. + (2.0*all_pair_sum - row_pair_sum - col_pair_sum)/total_pair_sum
+        # adjusted rand index
+        t1 = 2*row_pair_sum*col_pair_sum/total_pair_sum
+        arand = (all_pair_sum - t1)/((row_pair_sum + col_pair_sum)/2.0 - t1)
         return rand, arand
 
     def plot_matrix(self, ignore_class="", title="", dpi=300, output=None, fmt=None, extratxt=None, axislabels=True, groupcols=("red", "blue", "grey")):
