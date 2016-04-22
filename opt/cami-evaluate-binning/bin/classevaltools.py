@@ -20,7 +20,7 @@ class ConfusionMatrix:
         self._colindex = dict(zip(colnames, count()))
         self.title = title
 
-    #TODO: pre-compute sums to make operations constant in time
+    # TODO: pre-compute sums to make operations constant in time
 
     def recall_freqs(self):
         for name, row in zip(self._rownames, self._mat):
@@ -53,7 +53,7 @@ class ConfusionMatrix:
             yield name, correct / float(size)
 
     def recall(self, name=None):
-        if name == None:
+        if name is None:
             return self._recalls()
         size, correct = self.recall_freq(name)
         return correct / float(size)
@@ -111,9 +111,9 @@ class ConfusionMatrix:
         h = .0
         for name, hcl, size in self.entropy_freqs(ignore_class):
             totalsize += size
-            #stderr.write("%s has entropy %.2f\n" % (name, hcl))
+            # stderr.write("%s has entropy %.2f\n" % (name, hcl))
             h += hcl
-        return h/(totalsize*log(l,2.))
+        return h/(totalsize*log(l, 2.))
 
     def misclassification_rate(self, ignore_class=""):
         try:
@@ -131,7 +131,7 @@ class ConfusionMatrix:
                     totalcorrect += row[cindex]
                 except KeyError:
                     pass
-                if ignorecolindex != None:
+                if ignorecolindex is not None:
                     totalreject += row[ignorecolindex]
         if totalsize:
             return (totalsize - totalcorrect - totalreject) / float(totalsize)
@@ -169,7 +169,7 @@ class ConfusionMatrix:
             yield name, correct / float(size)
 
     def precision(self, name=None):
-        if name == None:
+        if name is None:
             return self._precisions()
         ret = self.precision_freq(name)
         return ret[2] / float(ret[1])
@@ -244,16 +244,18 @@ class ConfusionMatrix:
             total_sum += row_sum
             row_pair_sum += npair(row_sum)
         col_pair_sum = npair(col_sums).sum()
-        #stderr.write("%.2f, %.2f, %.2f\n" % (all_pair_sum, row_pair_sum, col_pair_sum))
+        # stderr.write("%.2f, %.2f, %.2f\n" % (all_pair_sum, row_pair_sum, col_pair_sum))
         
-        # simple rand index
         total_pair_sum = npair(total_sum)
-        rand = 1. + (2.0*all_pair_sum - row_pair_sum - col_pair_sum)/total_pair_sum
-
-        # adjusted rand index
-        t1 = 2*row_pair_sum*col_pair_sum/total_pair_sum
-        arand = (all_pair_sum - t1)/((row_pair_sum + col_pair_sum)/2.0 - t1)
-
+        if total_pair_sum == 0:
+            rand = float('na')
+            arand = float('na')
+        else:
+            # simple rand index
+            rand = 1. + (2.0*all_pair_sum - row_pair_sum - col_pair_sum)/total_pair_sum
+            # adjusted rand index
+            t1 = 2*row_pair_sum*col_pair_sum/total_pair_sum
+            arand = (all_pair_sum - t1)/((row_pair_sum + col_pair_sum)/2.0 - t1)
         return rand, arand
 
     def plot_matrix(self, ignore_class="", title="", dpi=300, output=None, fmt=None, extratxt=None, axislabels=True, groupcols=("red", "blue", "grey")):
@@ -269,7 +271,7 @@ class ConfusionMatrix:
         fsize = 10
         labellen = 25
         dampingexp = 1 / 4.
-        #labelfont = font_manager.FontProperties( fname="/.../MyriadPro-LightCond.otf" )
+        # labelfont = font_manager.FontProperties( fname="/.../MyriadPro-LightCond.otf" )
 
         # create temporary color array
         ca = empty((self._mat.shape[0], self._mat.shape[1], 3), dtype=float)  # TODO: not shape[1]?
@@ -280,11 +282,11 @@ class ConfusionMatrix:
 
         # true predictions will be blue, false will be red and rejects will be grey
         reds = colors.LinearSegmentedColormap.from_list("customreds", ["white", groupcols[0]],
-                                                        N=numcolors)  #pyplot.get_cmap( "Reds" )
+                                                        N=numcolors)  # pyplot.get_cmap( "Reds" )
         blues = colors.LinearSegmentedColormap.from_list("customblues", ["white", groupcols[1]],
-                                                         N=numcolors)  #pyplot.get_cmap( "Blues" )
+                                                         N=numcolors)  # pyplot.get_cmap( "Blues" )
         greys = colors.LinearSegmentedColormap.from_list("customgreys", ["white", groupcols[2]],
-                                                         N=numcolors)  #pyplot.get_cmap( "Greys" )
+                                                         N=numcolors)  # pyplot.get_cmap( "Greys" )
 
         # cut labels for processing
         def cutoff(s):
@@ -312,29 +314,32 @@ class ConfusionMatrix:
                                                 style="italic")
         rownum, colnum = self._mat.shape
 
-        labelfont = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light", size="small", style="normal")
+        labelfont = font_manager.FontProperties(
+            family="sans-serif", stretch="condensed", weight="light", size="small", style="normal")
 
         ax = pyplot.gca()  # fig.add_subplot( 111 )
         im = ax.imshow(ca, interpolation="nearest", origin="upper", aspect="equal")
 
         # adjust tick fonts
-	labelfont_size = (150.0 - min(max(rownum, colnum), 150.0))*0.06  # dynamic adjustment of font size
-        #stderr.write("rownum: %i | colum: %i | font size: %.2f\n" % (rownum, colnum, labelfont_size))
-        labelfont_y = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light", size=labelfont_size, style="normal")
-        labelfont_x = font_manager.FontProperties(family="sans-serif", stretch="condensed", weight="light", size=labelfont_size, style="normal")
+        labelfont_size = (150.0 - min(max(rownum, colnum), 150.0))*0.06  # dynamic adjustment of font size
+        # stderr.write("rownum: %i | colum: %i | font size: %.2f\n" % (rownum, colnum, labelfont_size))
+        labelfont_y = font_manager.FontProperties(
+            family="sans-serif", stretch="condensed", weight="light", size=labelfont_size, style="normal")
+        labelfont_x = font_manager.FontProperties(
+            family="sans-serif", stretch="condensed", weight="light", size=labelfont_size, style="normal")
 
         ax.xaxis.set_ticks_position('both')
 
         ax.xaxis.set_ticks(range(len(self._colnames)))
         ax.xaxis.set_ticks(arange(0.5, len(self._colnames) - 1), minor=True)
         ax.xaxis.set_ticklabels(colnames_cut, fontproperties=labelfont_x)
-        #ax.xaxis.grid( True, which="minor", linestyle="-", linewidth=gridlwidth, color=gridgrey )
+        # ax.xaxis.grid( True, which="minor", linestyle="-", linewidth=gridlwidth, color=gridgrey )
         ax.xaxis.tick_top()
 
         ax.yaxis.set_ticks(range(len(self._rownames)))
         ax.yaxis.set_ticks(arange(0.5, len(self._rownames) - 1), minor=True)     
         ax.yaxis.set_ticklabels(rownames_cut, fontproperties=labelfont_y)
-        #ax.yaxis.grid( True, which="minor", linestyle="-", linewidth=gridlwidth, color=gridgrey )
+        # ax.yaxis.grid( True, which="minor", linestyle="-", linewidth=gridlwidth, color=gridgrey )
         ax.yaxis.tick_left()
 
         for label in ax.xaxis.get_ticklabels():
@@ -346,32 +351,32 @@ class ConfusionMatrix:
             ax.set_yticklabels('', visible=False)
 
         if title:
-            #ax.set_title( title )
+            # ax.set_title( title )
             ax.set_xlabel(title, labelpad=10, fontproperties=titlefont)
         else:
             ax.set_xlabel(self.title, labelpad=10, fontproperties=titlefont)
-        #ax.set_title( self._title )
+        # ax.set_title( self._title )
 
         ax.tick_params(which="minor", direction="out", length=labelfont_size, width=gridlwidth, color=gridgrey)
         ax.tick_params(which="major", length=0)
-        #ax.title.set_y(1.05)
-        #ax.margins( 0.1 )
+        # ax.title.set_y(1.05)
+        # ax.margins( 0.1 )
 
         # shrink height of plot to free space for extratxt
         box = ax.get_position()
         ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
 
         fig = pyplot.gcf()
-        #fig.set_size_inches( 10, 10 )
+        # fig.set_size_inches( 10, 10 )
         fig.text(0.1, 0, extratxt, fontproperties=extrafont)
-        #fig.tight_layout()
+        # fig.tight_layout()
 
-        #pyplot.draw()
-        #fig.subplots_adjust( left=1, right=1, top=1, bottom=1 )
-        #pyplot.sci( im ) #probably not needed
-        #ax.annotate(extratxt, xy=(0, 0), xycoords="axes points")
-        #pyplot.colorbar()
-        #pyplot.tight_layout()
+        # pyplot.draw()
+        # fig.subplots_adjust( left=1, right=1, top=1, bottom=1 )
+        # pyplot.sci( im ) #probably not needed
+        # ax.annotate(extratxt, xy=(0, 0), xycoords="axes points")
+        # pyplot.colorbar()
+        # pyplot.tight_layout()
 
         if output:
             pyplot.savefig(output, format=fmt, dpi=dpi, transparent=True, bbox_inches="tight", pad_inches=1.3)
@@ -422,7 +427,7 @@ def parse_confusion_matrix(lines):
             rownames = []
 
             for line in lines:
-                if line == "\n":  #stop at empty line
+                if line == "\n":  # stop at empty line
                     break
                 line = line.rstrip("\n").split("\t")
                 rownames.append(line[0])
@@ -434,7 +439,7 @@ def parse_confusion_matrix(lines):
             line = lines.next()
 
     except StopIteration:
-        pass  #raises StopIteration automatically
+        pass  # raises StopIteration automatically
 
-parseConfusionMatrix = parse_confusion_matrix  # TODO: consistent naming scheme (underscore); transitional for backwards compatibility
-
+# TODO: consistent naming scheme (underscore); transitional for backwards compatibility
+parseConfusionMatrix = parse_confusion_matrix
