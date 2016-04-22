@@ -95,6 +95,12 @@ def get_parser_options(args=None, version="Prototype"):
 		help="file path")
 
 	parser.add_argument(
+		"-s", "--path_seq_length",
+		default=None,
+		type=str,
+		help="file path")
+
+	parser.add_argument(
 		"-o", "--path_dir_out",
 		default=None,
 		type=str,
@@ -106,10 +112,11 @@ def get_parser_options(args=None, version="Prototype"):
 		return parser.parse_args(args)
 
 
-def main(path_novelty, path_gold, path_query, is_supervised, out_dir):
+def main(path_novelty, path_gold, path_query, path_seq_length, is_supervised, out_dir):
 	assert path_novelty is not None, "Need novelty file"
 	assert path_gold is not None, "Need gold standard file"
 	assert path_query is not None, "Need query file"
+	assert path_seq_length is not None, "Need seq length file"
 	assert out_dir is not None, "Need output dir"
 
 	query_bin_column = "BINID"
@@ -124,38 +131,49 @@ def main(path_novelty, path_gold, path_query, is_supervised, out_dir):
 	novelty_to_out_file_handler_query = {}
 	novelty_to_out_file_paths_query = {}
 	novelty_to_out_file_handler_gold = {}
+	seq_length_file_paths = {}
+	seq_length_file_handler = {}
 	novelty_to_out_file_paths_gold = {}
-	for sid in cami_dict_gold:
-		bid_gold = cami_dict_gold[sid]["BINID"]
-		tid_gold = cami_dict_gold[sid]["TAXID"]
-		bin_query = None
-		if sid in cami_dict_query:
-			bin_query = cami_dict_query[sid][query_bin_column]
-		novelty = gid_to_novelty[bid_gold]
-		if novelty not in novelty_to_out_file_handler_query:
-			file_path_query = tempfile.mktemp(prefix="query_", dir=out_dir)
-			file_path_gold = tempfile.mktemp(prefix="gold_", dir=out_dir)
-			novelty_to_out_file_paths_query[novelty] = file_path_query
-			novelty_to_out_file_paths_gold[novelty] = file_path_gold
-			novelty_to_out_file_handler_query[novelty] = open(file_path_query, 'w')
-			novelty_to_out_file_handler_gold[novelty] = open(file_path_gold, 'w')
-			novelty_to_out_file_handler_query[novelty].write(cami_format_header_query)
-			novelty_to_out_file_handler_gold[novelty].write(cami_format_header_gold)
-		if bin_query is not None:
-			novelty_to_out_file_handler_query[novelty].write("{sid}\t{tid}\n".format(sid=sid, tid=bin_query))
-		novelty_to_out_file_handler_gold[novelty].write("{sid}\t{tid}\t{bid}\n".format(sid=sid, tid=tid_gold, bid=bid_gold))
+	with open(path_seq_length) as read_handler_seq_len:
+		for line_seq_length in read_handler_seq_len:
+			sid, _ = line_seq_length.split('\t')
+			bid_gold = cami_dict_gold[sid]["BINID"]
+			tid_gold = cami_dict_gold[sid]["TAXID"]
+			bin_query = None
+			if sid in cami_dict_query:
+				bin_query = cami_dict_query[sid][query_bin_column]
+			novelty = gid_to_novelty[bid_gold]
+			if novelty not in novelty_to_out_file_handler_query:
+				file_path_query = tempfile.mktemp(prefix="query_", dir=out_dir)
+				file_path_gold = tempfile.mktemp(prefix="gold_", dir=out_dir)
+				file_path_seq_length = tempfile.mktemp(prefix="seq_len_", dir=out_dir)
+				novelty_to_out_file_paths_query[novelty] = file_path_query
+				novelty_to_out_file_paths_gold[novelty] = file_path_gold
+				seq_length_file_paths[novelty] = file_path_seq_length
+				novelty_to_out_file_handler_query[novelty] = open(file_path_query, 'w')
+				novelty_to_out_file_handler_gold[novelty] = open(file_path_gold, 'w')
+				seq_length_file_handler[novelty] = open(file_path_seq_length, 'w')
+				novelty_to_out_file_handler_query[novelty].write(cami_format_header_query)
+				novelty_to_out_file_handler_gold[novelty].write(cami_format_header_gold)
+			if bin_query is not None:
+				novelty_to_out_file_handler_query[novelty].write("{sid}\t{tid}\n".format(sid=sid, tid=bin_query))
+			novelty_to_out_file_handler_gold[novelty].write("{sid}\t{tid}\t{bid}\n".format(sid=sid, tid=tid_gold, bid=bid_gold))
+			seq_length_file_handler[novelty].write(line_seq_length)
 
 	for novelty in novelty_to_out_file_handler_query:
 		novelty_to_out_file_handler_query[novelty].close()
 		novelty_to_out_file_handler_gold[novelty].close()
-		sys.stdout.write("{novelty}\t{query}\t{gold}\n".format(
+		seq_length_file_handler[novelty].close()
+		sys.stdout.write("{novelty}\t{gold}\t{query}\t{seql}\n".format(
 			novelty=novelty,
 			query=novelty_to_out_file_paths_query[novelty],
-			gold=novelty_to_out_file_paths_gold[novelty])
+			gold=novelty_to_out_file_paths_gold[novelty],
+			seql=seq_length_file_paths[novelty])
 		)
 
 
 if __name__ == "__main__":
 	options = get_parser_options()
-	main(options.path_novelty, options.path_gold, options.path_query, options.supervised, options.path_dir_out)
-
+	main(
+		options.path_novelty, options.path_gold, options.path_query,
+		options.path_seq_length, options.supervised, options.path_dir_out)
