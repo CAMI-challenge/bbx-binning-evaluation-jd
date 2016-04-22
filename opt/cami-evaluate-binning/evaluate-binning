@@ -204,7 +204,7 @@ elif [ "$eval_mode" == "unsupervised_novelties" ]; then # unsupervised binning
   do
     func_unsupervised "$gold_path" "$query_path" "$seqlen_file" "classname" "${prefix_index}_"
     format_text.py "$template" "${prefix_index}_" "$novelty" >> "biobox.yaml"
-    prefix_index=$((prefix+1))
+    prefix_index=$((prefix_index+1))
   done < "$SPLIT_WORK"
 else
   echo "Bad eval_mode"
