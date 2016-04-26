@@ -107,6 +107,9 @@ class ConfusionMatrix:
 
     def entropy(self, ignore_class=""):  # as in doi://10.1093/bioinformatics/btm134
         l = self._mat.shape[0] - (ignore_class in self._rowindex)
+        if l == 0:  # in case a level has no known representative at all
+            return float_nan
+        #stderr.write("l:{}\ts0:{}\ts1:{}\tnames:{}\n".format(l, self._mat.shape[0], self._mat.shape[1], self._rowindex.keys()))
         totalsize = .0
         h = .0
         for name, hcl, size in self.entropy_freqs(ignore_class):

@@ -196,7 +196,7 @@ elif [ "$eval_mode" == "unsupervised_novelties" ]; then # unsupervised binning
   SPLIT_WORK="$tmpdir/split_work.tsv"
   sort_by_novelty.py \
   -n "$BBX_OPTDIR/novelty_complete.tsv" -g "$gold_binningfile" -q "$pred_binningfile" -s "$seqlenfile" \
-  -o "$tmpdir" -tax > "$SPLIT_WORK"
+  -o "$tmpdir" > "$SPLIT_WORK"
   echo "---" > "biobox.yaml"
   echo "version: 0.10.0" >> "biobox.yaml"
   echo "results:" >> "biobox.yaml"
