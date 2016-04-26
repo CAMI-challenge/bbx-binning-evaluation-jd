@@ -67,7 +67,8 @@ chmod 755 "$tmpdir"
 # echo "Temp dir: '$tmpdir'"
 
 # general refresh cache
-if [[ $fastafile == *.gz ]]; then # compressed
+ISGZ=$(file -i /bbx/mnt/input/seq  | cut -d' ' -f2)
+if [[ "$ISGZ" == "application/gzip;" ]]; then # compressed
 	if [[ $bbx_arguments_sequences_id == "fastq" ]]; then
 		[ ! -r "$seqlenfile" ] && awk 'NR % 8 == 1 || NR % 8 == 2' <(gzip -dc $fastafile) | fastq-seqlen > "$seqlenfile"
 	elif [ $bbx_arguments_sequences_id == "fasta" ]; then
