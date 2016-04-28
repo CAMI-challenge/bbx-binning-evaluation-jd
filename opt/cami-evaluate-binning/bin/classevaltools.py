@@ -5,7 +5,7 @@ from itertools import count
 from math import isnan, ceil, log
 from sys import stderr
 
-from numpy import array, empty, arange, mean, std, zeros
+from numpy import array, empty, arange, mean, std, zeros, longdouble
 
 
 float_nan = float('NaN')
@@ -106,8 +106,10 @@ class ConfusionMatrix:
             yield name, h_cluster, size  # important: h_cluster is not entropy, but size*entropy
 
     def entropy(self, ignore_class=""):  # as in doi://10.1093/bioinformatics/btm134
+        #stderr.write("entropy: {}\n".format(self._rowindex))
         l = self._mat.shape[0] - (ignore_class in self._rowindex)
         if l == 0:  # in case a level has no known representative at all
+            #stderr.write("entropy: no known representative.\n")
             return float_nan
         #stderr.write("l:{}\ts0:{}\ts1:{}\tnames:{}\n".format(l, self._mat.shape[0], self._mat.shape[1], self._rowindex.keys()))
         totalsize = .0
@@ -118,6 +120,8 @@ class ConfusionMatrix:
             h += hcl
         tmp = totalsize*log(l, 2.)
         if tmp == 0:
+            # happens if l == 1, no conclusion can be drawn
+            #stderr.write("entropy: totalsize / l / h '{} / {} / {}'\n".format(totalsize, l, h))
             return float_nan
         return h/tmp
 
@@ -250,16 +254,17 @@ class ConfusionMatrix:
             total_sum += row_sum
             row_pair_sum += npair(row_sum)
         col_pair_sum = npair(col_sums).sum()
-        # stderr.write("%.2f, %.2f, %.2f\n" % (all_pair_sum, row_pair_sum, col_pair_sum))
+        #stderr.write("%.2f, %.2f, %.2f\n" % (all_pair_sum, row_pair_sum, col_pair_sum))
         
         total_pair_sum = npair(total_sum)
+        #stderr.write("%.2f\n" % (total_pair_sum))
         if total_pair_sum == 0:
             return float_nan, float_nan
         # simple rand index
         rand = 1. + (2.0*all_pair_sum - row_pair_sum - col_pair_sum)/total_pair_sum
         # adjusted rand index
-        t1 = 2*row_pair_sum*col_pair_sum/total_pair_sum
-        arand = (all_pair_sum - t1)/((row_pair_sum + col_pair_sum)/2.0 - t1)
+        t1 = row_pair_sum * col_pair_sum / total_pair_sum
+        arand = (all_pair_sum - t1) / ((row_pair_sum + col_pair_sum)/2.0 - t1)
         return rand, arand
 
     def plot_matrix(self, ignore_class="", title="", dpi=300, output=None, fmt=None, extratxt=None, axislabels=True, groupcols=("red", "blue", "grey")):
