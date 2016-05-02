@@ -44,7 +44,7 @@ def parse_cami_format(file_path, required_columns, key_column=None):
 		key_index = column_names.index(key_column)
 
 		for line in read_handler:
-			line = line.rstrip('\n')
+			line = line.strip()
 			if line.startswith('#') or len(line) == 0:
 				continue
 			row = line.split('\t')
