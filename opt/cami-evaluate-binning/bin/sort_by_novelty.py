@@ -31,7 +31,7 @@ def parse_cami_format(file_path, required_columns, key_column=None):
 	with open(file_path) as read_handler:
 		column_names = []
 		for line in read_handler:
-			line = line.rstrip('\n')
+			line = line.strip()
 			if line.startswith('@@'):
 				column_names = line[2:].split('\t')
 				break
