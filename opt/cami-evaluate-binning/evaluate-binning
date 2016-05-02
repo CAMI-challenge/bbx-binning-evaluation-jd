@@ -67,22 +67,26 @@ chmod 755 "$tmpdir"
 # echo "Temp dir: '$tmpdir'"
 
 # general refresh cache
-ISGZ=$(file -i /bbx/mnt/input/seq  | cut -d' ' -f2)
+ISGZ=$(file -i $fastafile | cut -d' ' -f2)
 if [[ "$ISGZ" == "application/gzip;" ]]; then # compressed
+	echo "Detected compressed sequence file"
 	if [[ $bbx_arguments_sequences_format == "bioboxes.org:/fastq" ]]; then
+		echo "Analysing fastq sequence file"
 		[ ! -r "$seqlenfile" ] && awk 'NR % 8 == 1 || NR % 8 == 2' <(gzip -dc $fastafile) | fastq-seqlen > "$seqlenfile"
 	elif [ $bbx_arguments_sequences_format == "bioboxes.org:/fasta" ]; then
+		echo "Analysing fasta sequence file"
 		[ ! -r "$seqlenfile" ] && zcat $fastafile | fasta-seqlen > "$seqlenfile"
 	else
 		echo "Unknown: $bbx_arguments_sequences_id"
 		exit 1
 	fi
 else # raw file
+	echo "Detected raw sequence file"
 	if [[ $bbx_arguments_sequences_format == "bioboxes.org:/fastq" ]]; then
-		#echo "fastq"
+		echo "Analysing fastq sequence file"
 		[ ! -r "$seqlenfile" ] && awk 'NR % 8 == 1 || NR % 8 == 2' $fastafile | fastq-seqlen > "$seqlenfile"
 	elif [ $bbx_arguments_sequences_format == "bioboxes.org:/fasta" ]; then
-		#echo "fasta"
+		echo "Analysing fasta sequence file"
 		[ ! -r "$seqlenfile" ] && cat $fastafile | fasta-seqlen > "$seqlenfile"
 	else # fasta
 		echo "Unknown: $bbx_arguments_sequences_id"
