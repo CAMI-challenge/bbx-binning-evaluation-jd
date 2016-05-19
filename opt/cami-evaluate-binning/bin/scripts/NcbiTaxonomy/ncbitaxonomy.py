@@ -202,7 +202,10 @@ class NcbiTaxonomy(Validator):
 		# todo: sort ranks
 		if inherit_rank:
 			rank_previous = default_value
-			for index, value in reversed(list(enumerate(lineage))):
+			tmp_list = enumerate(lineage)
+			if self.default_ordered_legal_ranks.index(ranks[0]) < self.default_ordered_legal_ranks.index(ranks[-1]):
+				tmp_list = reversed(list(enumerate(lineage)))
+			for index, value in tmp_list:
 				if value == default_value:
 					lineage[index] = rank_previous
 				else:
@@ -487,3 +490,4 @@ class NcbiTaxonomy(Validator):
 		# for taxid in set_of_strains:
 		for taxid, name in self.taxid_to_name.iteritems():
 			stream.write("{}\t{}\n".format(taxid, name))
+
