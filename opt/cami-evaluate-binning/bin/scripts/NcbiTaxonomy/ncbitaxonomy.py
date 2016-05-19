@@ -1,7 +1,7 @@
 # original from Dmitrij Turaev
 
 __author__ = 'Peter Hofmann'
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 
 import os
@@ -47,6 +47,7 @@ class NcbiTaxonomy(Validator):
 		super(NcbiTaxonomy, self).__init__(logfile=logfile, verbose=verbose)
 		assert self.validate_dir(taxonomy_directory, file_names=["names.dmp", "merged.dmp", "nodes.dmp"])
 		assert isinstance(build_node_tree, bool)
+		taxonomy_directory = self.get_full_path(taxonomy_directory)
 		self._file_path_ncbi_names = os.path.join(taxonomy_directory, "names.dmp")
 		self._file_path_ncbi_merged = os.path.join(taxonomy_directory, "merged.dmp")
 		self._file_path_ncbi_nodes = os.path.join(taxonomy_directory, "nodes.dmp")
@@ -156,7 +157,7 @@ class NcbiTaxonomy(Validator):
 			return None
 		return set_of_tax_id
 
-	def get_lineage_of_legal_ranks(self, taxid, ranks=None, default_value=None, as_name=False):
+	def get_lineage_of_legal_ranks(self, taxid, ranks=None, default_value=None, as_name=False, inherit_rank=False):
 		"""
 			Return lineage of a specific taxonomic identifier, filtered by a list of legal ranks
 
@@ -170,6 +171,8 @@ class NcbiTaxonomy(Validator):
 			@type default_value: None | basestring
 			@param as_name: return scientific name if true, not taxonomic id
 			@type as_name: bool
+			@param inherit_rank: name unnamed rank names by known ones, species -> root
+			@type inherit_rank: bool
 
 			@return: list of ncbi taxonomic identifiers
 			@rtype: list[str|unicode|None]
@@ -195,6 +198,15 @@ class NcbiTaxonomy(Validator):
 					lineage[ranks.index(rank)] = NcbiTaxonomy.taxid_to_name[taxid]
 				else:
 					lineage[ranks.index(rank)] = taxid
+
+		# todo: sort ranks
+		if inherit_rank:
+			rank_previous = default_value
+			for index, value in reversed(list(enumerate(lineage))):
+				if value == default_value:
+					lineage[index] = rank_previous
+				else:
+					rank_previous = value
 		return lineage
 
 	def get_lineage(self, taxid):
