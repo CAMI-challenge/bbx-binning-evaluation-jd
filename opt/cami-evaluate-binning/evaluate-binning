@@ -69,6 +69,11 @@ cmatfile="$tmpdir/pred.cmat"
 [ ! -r "$seqlenfile" ] && cat $fastafile | fasta-seqlen > "$seqlenfile"
 
 
+if [ "$eval_mode" == "unsupervised_to_taxonomic" ]; then # transform to taxonomic binning
+  python tax_from_unsupervised.py $pred_binningfile "$tmpdir/tmp_binning"
+  pred_binningfile="$tmpdir/tmp_binning"
+  eval_mode="taxonomic"
+
 if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
   taxdir="$bbx_arguments_databases_taxonomy_path"
   
