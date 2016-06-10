@@ -101,7 +101,7 @@ def write_taxonomic(filename, gsa):
 	return toWrite
 
 profile = write_taxonomic(sys.argv[1],sys.argv[2])
-name = sys.argv[2]
+name = sys.argv[3]
 f = open(name,'w') # not beautiful but effective
 f.write(profile)
 	

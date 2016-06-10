@@ -169,7 +169,7 @@ func_unsupervised ()
 }
 
 if [ "$eval_mode" == "unsupervised_to_taxonomic" ]; then # transform to taxonomic and run accordingly
-  python "$BBX_OPTDIR/cami-evaluate-binning/bin/tax_from_unsupervised.py" "$pred_binningfile" "$tmpdir/tmp_binning"
+  python "$BBX_OPTDIR/cami-evaluate-binning/bin/tax_from_unsupervised.py" "$pred_binningfile" "$gold_binningfile" "$tmpdir/tmp_binning"
   func_supervised "$gold_binningfile" "$tmpdir/tmp_binning" "$seqlenfile" ""
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
 elif [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
