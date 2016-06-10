@@ -26,7 +26,7 @@ def get_mapping(mapping_file, read_based): # the mapping file needs to follow th
 		if (line.startswith('#')):
 			continue
 		parts = line.split()
-		if len(parts) < 3:
+		if len(parts) < 4:
 			continue
 		contig = parts[0]
 		taxid = parts[2]
