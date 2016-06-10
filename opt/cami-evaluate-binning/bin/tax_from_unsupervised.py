@@ -17,6 +17,32 @@ Use in biobox, apart from that input is supposed to be in sys.argv:
 # global variable
 taxonomy = ['species','genus','family','order','class','phylum','superkingdom']
 
+def get_mapping(mapping_file, read_based): # the mapping file needs to follow the exact format
+	mapping = open(mapping_file)
+	contig_length = {}
+	contig_coverage = {}
+	taxon = {}
+	for line in mapping:
+		if (line.startswith('#')):
+			continue
+		parts = line.split()
+		contig = parts[0]
+		taxid = parts[2]
+		length = 0.
+		if read_based:
+			length = 150.
+			contig_length[contig] = 150
+			contig_coverage[contig] = 1
+		else:
+			length = float(parts[3].split('_')[-1]) # name has _contiglength as last component
+			contig_length[contig] = length	
+			coverage = float(parts[-1]) * 150. / length
+			contig_coverage[contig] = coverage
+			# number of reads, read length is always 150, #reads * 150/contig_length is coverage
+		taxon[contig] = (taxid, length)
+	mapping.close()
+	return (contig_length, contig_coverage, taxon)
+
 def map_genomes(filename, gsa):
 	participant = open(filename)
 	gold_standard = get_mapping(gsa, False)[2]
