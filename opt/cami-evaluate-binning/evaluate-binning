@@ -100,6 +100,8 @@ func_supervised ()
   query_bin_file=$2
   seq_len_file=$3
   prefix=$4
+  btype=${5:-taxon}
+
   # echo "supervised g:${gold_bin_file} q:$query_bin_file"
   taxdir="$bbx_arguments_databases_taxonomy_path"
 
@@ -125,7 +127,7 @@ func_supervised ()
   [ ! -r "$gold_racolfile" ] && tax2racol -t "$taxdir" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
 
   # generate taxonomic prediction files
-  binning2tsv --type taxon < "$query_bin_file" > "$pred_taxfile"
+  binning2tsv --type $btype < "$query_bin_file" > "$pred_taxfile"
   tax2racol -t "$taxdir" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
   
   # generate confusion matrix
@@ -170,7 +172,7 @@ func_unsupervised ()
 
 if [ "$eval_mode" == "unsupervised_to_taxonomic" ]; then # transform to taxonomic and run accordingly
   python "$BBX_OPTDIR/cami-evaluate-binning/bin/tax_from_unsupervised.py" "$pred_binningfile" "$gold_binningfile" "$tmpdir/tmp_binning"
-  func_supervised "$gold_binningfile" "$tmpdir/tmp_binning" "$seqlenfile" ""
+  func_supervised "$gold_binningfile" "$tmpdir/tmp_binning" "$seqlenfile" "" "classname"
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
 elif [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
   func_supervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" ""
