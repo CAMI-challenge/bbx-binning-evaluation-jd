@@ -207,7 +207,7 @@ class NcbiTaxonomy(Validator):
 				tmp_list = reversed(list(enumerate(lineage)))
 			for index, value in tmp_list:
 				if value == default_value:
-					lineage[index] = rank_previous
+					lineage[index] = "{}_{}_{}".format("unknown", ranks[index], rank_previous)
 				else:
 					rank_previous = value
 		return lineage

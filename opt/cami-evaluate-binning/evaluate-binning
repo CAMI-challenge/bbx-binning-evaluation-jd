@@ -125,8 +125,9 @@ func_supervised ()
   [ ! -r "$gold_racolfile" ] && tax2racol -t "$taxdir" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
 
   # generate taxonomic prediction files
+  pred_ic="unknown_tax"
   binning2tsv --type taxon < "$query_bin_file" > "$pred_taxfile"
-  tax2racol -t "$taxdir" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
+  tax2racol -t "$taxdir" -u "$pred_ic" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
   
   # generate confusion matrix
   cmatfile="$tmpdir/${prefix}pred.cmat"
@@ -139,8 +140,10 @@ func_supervised ()
   cmat2summarystats -t 0.99 < "$cmatfile" > "${prefix}summary_stats_99.tsv"
   cmat2summarystats < "$cmatfile" > "${prefix}summary_stats.tsv"
   cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg < "$cmatfile"
-  cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
-  cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
+  #cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
+  #cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
+  cmat2unsupervised --ignore-class ",$pred_ic" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
+  cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
 }
 
 

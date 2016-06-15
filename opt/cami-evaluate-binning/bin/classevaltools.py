@@ -64,7 +64,7 @@ class ConfusionMatrix:
 		size, correct = self.recall_freq(name)
 		return correct / float(size)
 
-	def macro_recall(self, ignore_class=set("")):
+	def macro_recall(self, ignore_class={""}):
 		recs = []
 		for name, rec in self.recall():
 			if name not in ignore_class:
@@ -74,7 +74,7 @@ class ConfusionMatrix:
 		return float_nan, float_nan, 0
 
 	# same as accuracy!
-	def micro_recall(self, ignore_class=set("")):
+	def micro_recall(self, ignore_class={""}):
 		totalcorrect = 0
 		totalsize = 0
 		for name, size, correct in self._recall_freqs():
@@ -83,7 +83,7 @@ class ConfusionMatrix:
 				totalsize += size
 		return totalcorrect / float(totalsize)
 
-	def accuracy(self, ignore_class=set("")):
+	def accuracy(self, ignore_class={""}):
 		totalsize = 0
 		totalcorrect = 0
 		for name, row in zip(self._rownames, self._mat):
@@ -98,7 +98,7 @@ class ConfusionMatrix:
 			return totalcorrect / float(totalsize)
 		return float_nan
 
-	def entropy_freqs(self, ignore_class=set("")):
+	def entropy_freqs(self, ignore_class={""}):
 		for i, name in enumerate(self._colnames):
 			if name in ignore_class:
 				continue
@@ -111,7 +111,7 @@ class ConfusionMatrix:
 					h_cluster -= j*log(p, 2.)
 			yield name, h_cluster, size  # important: h_cluster is not entropy, but size*entropy
 
-	def entropy(self, ignore_class=set("")):  # as in doi://10.1093/bioinformatics/btm134
+	def entropy(self, ignore_class={""}):  # as in doi://10.1093/bioinformatics/btm134
 		# stderr.write("entropy: {}\n".format(self._rowindex))
 		# (ignore_class in self._rowindex)
 		l = self._mat.shape[0] - len(set(self._rowindex).intersection(ignore_class))
@@ -133,7 +133,7 @@ class ConfusionMatrix:
 			return float_nan
 		return h/tmp
 
-	def misclassification_rate(self, ignore_class=set("")):
+	def misclassification_rate(self, ignore_class={""}):
 		ignorecolindex = set()
 		for iclass in ignore_class:
 			try:
@@ -144,7 +144,7 @@ class ConfusionMatrix:
 		totalsize = 0
 		totalcorrect = 0
 		for name, row in zip(self._rownames, self._mat):
-			if name != ignore_class:
+			if name not in ignore_class:
 				totalsize += row.sum()
 				cindex = self._colindex[name]
 				try:
@@ -200,17 +200,17 @@ class ConfusionMatrix:
 		ret = self.precision_freq(name)
 		return ret[2] / float(ret[1])
 
-	def macro_precision(self, ignore_class="", truncate=0):
+	def macro_precision(self, ignore_class={""}, truncate=0):
 		if not truncate:
 			precs = []
 			for name, prec in self.precision():
-				if name != ignore_class:
+				if name not in ignore_class:
 					precs.append(prec)
 		else:
 			totalsize = 0
 			precs_sizes = []
 			for name, size, correct in self._precision_freqs():
-				if name != ignore_class:
+				if name not in ignore_class:
 					totalsize += size
 					precs_sizes.append((size, correct / float(size)))
 			precs_sizes.sort(reverse=True)  # reverse sort from high to low bins
@@ -242,27 +242,27 @@ class ConfusionMatrix:
 		return float_nan, float_nan, 0
 
 	# same as accuracy!
-	def micro_precision(self, ignore_class=""):
+	def micro_precision(self, ignore_class={""}):
 		totalcorrect = 0
 		totalsize = 0
 		for name, size, correct in self._precision_freqs():
-			if name != ignore_class and size:
+			if name not in ignore_class and size:
 				totalcorrect += correct
 				totalsize += size
 		return totalcorrect / float(totalsize)
 
-	def rand(self, ignore_class=""):  # as in doi://10.1038/nmeth.3103
+	def rand(self, ignore_class={""}):  # as in doi://10.1038/nmeth.3103
 		npair = lambda i: i*(i-1)  # not including division by 2 because we can often cancel it
 		all_pair_sum = 0.
 		total_sum = 0.
 		row_pair_sum = 0.
 		col_sums = zeros(self._mat.shape[1])  # ignore_class entry simply remains zero
 		for cname, col in zip(self._rownames, self._mat):
-			if cname == ignore_class:
+			if cname in ignore_class:
 				continue
 			row_sum = 0.
 			for i, rname, val in zip(count(), self._colnames, col):
-				if rname == ignore_class:
+				if rname in ignore_class:
 					continue
 				all_pair_sum += npair(val)
 				row_sum += val
@@ -284,7 +284,7 @@ class ConfusionMatrix:
 		return rand, arand
 
 	def plot_matrix(
-		self, ignore_class="", title="", dpi=300, output=None, fmt=None, extratxt=None, axislabels=True,
+		self, ignore_class={""}, title="", dpi=300, output=None, fmt=None, extratxt=None, axislabels=True,
 		groupcols=("red", "blue", "grey")):
 		import matplotlib
 		matplotlib.use('Agg')
@@ -327,7 +327,7 @@ class ConfusionMatrix:
 		# calculate colors for each cell
 		for rname, orow, crow in zip(self._rownames, self._mat, ca):
 			for cname, i in zip(self._colnames, count()):
-				if cname == ignore_class or rname == ignore_class:
+				if cname in ignore_class or rname in ignore_class:
 					crow[i] = greys(transform(orow[i]))[:3]
 				elif cname == rname:
 					crow[i] = blues(transform(orow[i]))[:3]
