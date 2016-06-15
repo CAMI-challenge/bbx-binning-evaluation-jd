@@ -42,14 +42,14 @@ if __name__ == "__main__":
         usage()
         exit(2)
 
-    ignore_class = None
+    ignore_class = set()
 
     for o, a in opts:
         if o in ("-h", "--help"):
             usage()
             exit()
         elif o in ("-i", "--ignore-class"):
-            ignore_class = a
+            ignore_class = set(a.split(','))
         else:
             assert False, "unhandled option"
 

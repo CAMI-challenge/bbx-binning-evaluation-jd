@@ -37,7 +37,7 @@ pred_binningfile="$bbx_arguments_predictions_path"
 
 # some assertions
 if [ ! "$(cut -d '.' -f 1-2 <<<$bbx_version)" == '0.10' ]; then
-  echo "Bioboxes.org input definition is '$bbx_version', not '0.9'."
+  echo "Bioboxes.org input definition is '$bbx_version', not '0.10'."
   exit 1
 fi
 
@@ -110,9 +110,9 @@ func_supervised ()
 
   # simple variables
   ranks='species,genus,family,order,class,phylum,superkingdom'
+  taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
   pred_taxfile="$tmpdir/${prefix}pred.tax"
   pred_racolfile="$tmpdir/${prefix}pred.racol"
-  taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
   #taxsqlite="$cache/ncbi-taxonomy_${taxversion}.sqlite"
 
   # cached variables
@@ -137,17 +137,19 @@ func_supervised ()
   cmat2perbinstats < "$cmatfile" > "${prefix}perbin_stats.tsv"
   cmat2summarystats -t 0.95 < "$cmatfile" > "${prefix}summary_stats_95.tsv"
   cmat2summarystats -t 0.99 < "$cmatfile" > "${prefix}summary_stats_99.tsv"
+  cmat2summarystats < "$cmatfile" > "${prefix}summary_stats.tsv"
   cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg < "$cmatfile"
-  cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_stats.tsv"
+  cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
+  cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
 }
+
 
 func_unsupervised ()
 {
   gold_bin_file=$1
   query_bin_file=$2
   seq_len_file=$3
-  btype=$4
-  prefix=$5
+  prefix=$4
   # echo "unsupervised g:$gold_bin_file q:$query_bin_file"
   # simple variables
   gold_tabfile="$cache/${prefix}gold_${goldversion}.tsv"
@@ -157,7 +159,7 @@ func_unsupervised ()
   [ ! -r "$gold_tabfile" ] && binning2tsv --type classname < "$gold_bin_file" > "$gold_tabfile"
 
   # generate prediction file
-  binning2tsv --type "$btype" < "$query_bin_file" > "$pred_tabfile"
+  binning2tsv --type classname < "$query_bin_file" > "$pred_tabfile"
 
   # generate confusion matrix
   cmatfile="$tmpdir/${prefix}pred.cmat"
@@ -165,20 +167,78 @@ func_unsupervised ()
 
   # evaluation
   cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg --nolabels --unsupervised < "$cmatfile"
-  cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_stats.tsv"
+  cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
+  cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
 }
 
-if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
-  func_supervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" ""
-  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
-elif [ "$eval_mode" == "unsupervised" ]; then # unsupervised binning
-  func_unsupervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" "classname" ""
-  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
-elif [ "$eval_mode" == "hybrid" ]; then # hybrid binning
-  func_unsupervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" "taxon" ""
-  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
-elif [ "$eval_mode" == "taxonomic_novelties" ]; then  # taxonomic binning
-  # echo "taxonomic_novelties"
+
+func_unsupervised_hybrid ()
+{
+  gold_bin_file=$1
+  query_bin_file=$2
+  seq_len_file=$3
+  prefix=$4
+  # echo "unsupervised g:$gold_bin_file q:$query_bin_file"
+
+  # simple variables
+  ranks='species,genus,family,order,class,phylum,superkingdom'
+  taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
+  pred_taxfile="$tmpdir/${prefix}pred.tax"
+  pred_racolfile="$tmpdir/${prefix}pred.racol"
+  #taxsqlite="$cache/ncbi-taxonomy_${taxversion}.sqlite"
+
+  # cached variables
+  gold_taxfile="$cache/${prefix}gold_${goldversion}.tax"
+  gold_racolfile="$cache/${prefix}gold_${goldversion}_${taxversion}.racol"
+  
+  # refresh cache
+  #[ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
+  [ ! -r "$gold_taxfile" ] && binning2tsv --type taxon < "${gold_bin_file}" > "$gold_taxfile"
+  # [ ! -r "$gold_racolfile" ] && tax2racol -t "$taxdir" -u "" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
+  echo -e "species\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom" > "$gold_racolfile"
+  awk -F $'\t' '{printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\n",$2,$2,$2,$2,$2,$2,$2)}' "${gold_bin_file}" >> "$gold_racolfile"
+  # paste <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") >> "$gold_racolfile"
+
+  # generate taxonomic prediction files
+  pred_ic="unknown_tax"
+  binning2tsv --type taxon < "$query_bin_file" > "$pred_taxfile"
+  tax2racol -t "$taxdir" -u "$pred_ic" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
+  
+  # generate confusion matrix
+  cmatfile="$tmpdir/${prefix}pred.cmat"
+  confusionmatrix --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seq_len_file" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
+  
+  # evaluation
+  cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg --nolabels --unsupervised < "$cmatfile"
+  cmat2unsupervised --ignore-class ",$pred_ic" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
+  cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
+}
+
+func_split ()
+{
+  func_eval="$1"
+  file_path_categories="$2"
+  template="$3"
+  prefix_index=0
+  SPLIT_WORK="$tmpdir/split_work.tsv"
+  sort_by_novelty.py \
+  -n "$file_path_categories" -g "$gold_binningfile" -q "$pred_binningfile" -s "$seqlenfile" \
+  -o "$tmpdir" > "$SPLIT_WORK"
+  echo "---" > "biobox.yaml"
+  echo "version: 0.10.0" >> "biobox.yaml"
+  echo "results:" >> "biobox.yaml"
+  template=
+  while IFS=$'\t' read novelty gold_path query_path seqlen_file;
+  do
+    func_unsupervised "$gold_path" "$query_path" "$seqlen_file" "${prefix_index}_"
+    format_text.py "$template" "${prefix_index}_" "$novelty" >> "biobox.yaml"
+    prefix_index=$((prefix_index+1))
+  done < "$SPLIT_WORK"
+}
+
+func_supervised_split ()
+{
+  file_path_categories="$1"
   prefix_index=0
   SPLIT_WORK="$tmpdir/split_work.tsv"
   sort_by_novelty.py \
@@ -195,40 +255,32 @@ elif [ "$eval_mode" == "taxonomic_novelties" ]; then  # taxonomic binning
     format_text.py "$template" "${prefix_index}_" "$novelty" >> "biobox.yaml"
     prefix_index=$((prefix_index+1))
   done < "$SPLIT_WORK"
+}
+
+if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
+  func_supervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" ""
+  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
+elif [ "$eval_mode" == "unsupervised" ]; then # unsupervised binning
+  func_unsupervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" ""
+  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
+elif [ "$eval_mode" == "hybrid" ]; then # hybrid binning
+  func_unsupervised_hybrid "$gold_binningfile" "$pred_binningfile" "$seqlenfile" ""
+  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
+elif [ "$eval_mode" == "taxonomic_novelties" ]; then  # taxonomic binning
+  # echo "taxonomic_novelties"
+  file_path_category="$BBX_OPTDIR/novelty_complete.tsv"
+  file_path_template="$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic_template.yaml"
+  func_split func_supervised "$file_path_category" "$file_path_template"
 elif [ "$eval_mode" == "unsupervised_novelties" ]; then # unsupervised binning
   # echo "unsupervised_novelties"
-  prefix_index=0
-  SPLIT_WORK="$tmpdir/split_work.tsv"
-  sort_by_novelty.py \
-  -n "$BBX_OPTDIR/novelty_complete.tsv" -g "$gold_binningfile" -q "$pred_binningfile" -s "$seqlenfile" \
-  -o "$tmpdir" > "$SPLIT_WORK"
-  echo "---" > "biobox.yaml"
-  echo "version: 0.10.0" >> "biobox.yaml"
-  echo "results:" >> "biobox.yaml"
-  template="$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised_template.yaml"
-  while IFS=$'\t' read novelty gold_path query_path seqlen_file;
-  do
-    func_unsupervised "$gold_path" "$query_path" "$seqlen_file" "classname" "${prefix_index}_"
-    format_text.py "$template" "${prefix_index}_" "$novelty" >> "biobox.yaml"
-    prefix_index=$((prefix_index+1))
-  done < "$SPLIT_WORK"
+  file_path_category="$BBX_OPTDIR/novelty_complete.tsv"
+  file_path_template="$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised_template.yaml"
+  func_split func_unsupervised "$file_path_category" "$file_path_template"
 elif [ "$eval_mode" == "hybrid_novelties" ]; then # unsupervised binning
-  # echo "unsupervised_novelties"
-  prefix_index=0
-  SPLIT_WORK="$tmpdir/split_work.tsv"
-  sort_by_novelty.py \
-  -n "$BBX_OPTDIR/novelty_complete.tsv" -g "$gold_binningfile" -q "$pred_binningfile" -s "$seqlenfile" \
-  -o "$tmpdir" -tax > "$SPLIT_WORK"
-  echo "---" > "biobox.yaml"
-  echo "version: 0.10.0" >> "biobox.yaml"
-  echo "results:" >> "biobox.yaml"
-  template="$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised_template.yaml"
-  while IFS=$'\t' read novelty gold_path query_path seqlen_file;
-  do
-    func_unsupervised "$gold_path" "$query_path" "$seqlen_file" "taxon" "${prefix_index}_"
-    format_text.py "$template" "${prefix_index}_" "$novelty" >> "biobox.yaml"
-    prefix_index=$((prefix_index+1))
-  done < "$SPLIT_WORK"
+  # echo "unsupervised_hybrid"
+  file_path_category="$BBX_OPTDIR/novelty_complete.tsv"
+  file_path_template="$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised_template.yaml"
+  func_split func_unsupervised_hybrid "$file_path_category" "$file_path_template"
 else
   echo "Bad eval_mode"
   exit 1

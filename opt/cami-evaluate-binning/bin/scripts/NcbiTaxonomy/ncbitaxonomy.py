@@ -1,7 +1,7 @@
 # original from Dmitrij Turaev
 
 __author__ = 'Peter Hofmann'
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 
 import os
