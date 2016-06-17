@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # parse command line options
     try:
-        opts, args = getopt.getopt(argv[1:], 'ht:r:i', ['help', 'taxonomy-dir=', 'ranks=', 'show-identifiers'])
+        opts, args = getopt.getopt(argv[1:], 'ht:u:r:i', ['help', 'taxonomy-dir=', 'unknown-class=', 'ranks=', 'show-identifiers'])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err)  # will print something like "option -a not recognized"
