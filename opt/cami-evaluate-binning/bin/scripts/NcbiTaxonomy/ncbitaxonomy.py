@@ -183,6 +183,10 @@ class NcbiTaxonomy(Validator):
 			ranks = NcbiTaxonomy.default_ordered_legal_ranks
 
 		lineage = [default_value] * len(ranks)
+		if taxid == "45202":
+			taxid = "36549"
+		if taxid == "32644":
+			return lineage
 		original_rank = self.get_rank_of_taxid(taxid)
 		if original_rank is not None and original_rank in ranks:
 			if as_name:
@@ -207,7 +211,10 @@ class NcbiTaxonomy(Validator):
 				tmp_list = reversed(list(enumerate(lineage)))
 			for index, value in tmp_list:
 				if value == default_value:
-					lineage[index] = "{}_{}_{}".format("unknown", ranks[index], rank_previous)
+					if rank_previous != default_value:
+						lineage[index] = "{}_{}".format(ranks[index], rank_previous)
+					else:
+						lineage[index] = default_value
 				else:
 					rank_previous = value
 		return lineage
