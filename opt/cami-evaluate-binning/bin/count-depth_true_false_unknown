@@ -1,27 +1,38 @@
 #!/usr/bin/env python
 
 from sys import argv, stdout, stderr, exit
-from numpy import mean
+# from numpy import mean
+
 
 # simple dummy weight function counting each sequences as one
 class oneweight:
-	__getitem__ = lambda self,key: 1
+	_weight = 1
+
+	def __getitem__(self, key)
+		return self._weight
+
+	def __init__(self, weight=1):
+		self._weight = weight
 
 def usage():
 	print >> stderr, 'Usage: ', argv[0], '--labels lab.racol --predictions pred.racol [--with-unknown-labels  --weights sequences.weights --scale .001]'
+
 
 if __name__ == "__main__":
 	import getopt
 	
 	# parse command line options
 	try:
-		opts, args = getopt.getopt( argv[1:], 'hl:p:w:s:u', ['help', 'labels=','predictions=','weights=','scale=','with-unknown-labels'] )
+		opts, args = getopt.getopt(
+			argv[1:], 'hl:p:w:s:c:u',
+			['help', 'labels=', 'predictions=', 'weights=', 'scale=', 'class-for-missing-predictions=', 'with-unknown-labels'])
 	except getopt.GetoptError, err:
-		print str( err ) # will print something like "option -a not recognized"
+		print str(err)  # will print something like "option -a not recognized"
 		usage()
 		exit(2)
 	
 	# default parameters
+	class_for_missing_predictions = ""
 	reffile = None
 	predfile = None
 	weightfile = None
@@ -38,48 +49,54 @@ if __name__ == "__main__":
 			predfile = a
 		elif o in ("-w", "--weights"):
 			weightfile = a
+		elif o in ("-c", "--class-for-missing-predictions"):
+			class_for_missing_predictions = a
 		elif o in ("-u", "--with-unknown-labels"):
 			unknown_labels = True
 		elif o in ("-s", "--scale"):
-			scale = float( a )
+			scale = float(a)
 		else:
 			assert False, "unhandled option"
 	
 	if not reffile:
 		print >>stderr, "you must specify a file for taxonomic labels"
 		usage()
-		exit( 3 )
+		exit(3)
 	
 	if not predfile:
 		print >>stderr, "you must specify a file for taxonomic predictions"
 		usage()
-		exit( 4 )
-	
-	# read ref assignments
-	ref={}
-	with open( reffile, "r" ) as f:
-		for line in f:
-			if line[0] != "#":
-				line = line.rstrip( "\n" ).split( "\t" )
-				ref[line[0]] = line[1:]
-
-	# read predictions
-	pred={}
-	with open( predfile, "r" ) as f:
-		for line in f:
-			if line[0] != "#":
-				line = line.rstrip( "\n" ).split( "\t" )
-				pred[line[0]] = line[1:]
+		exit(4)
 	
 	# read weights if given
 	if weightfile:
 		weight = {}
-		with open( weightfile, "r" ) as f:
+		with open(weightfile, "r") as f:
 			for line in f:
-				name, w = line.strip().split( "\t", 2 )[:2]
-				weight[name] = int( w )
+				name, w = line.strip().split("\t", 2)[:2]
+				weight[name] = int(w)
+		wset = set(weight.values())
+		if len(wset) == 1:  # all sequences have the same length
+			del weight
+			weight = oneweight(wset.pop())
 	else:
 		weight = oneweight()
+	
+	# read ref assignments
+	ref = {}
+	with open(reffile, "r") as f:
+		for line in f:
+			if line[0] != "#":
+				line = line.rstrip("\n").split("\t")
+				ref[line[0]] = line[1:]
+
+	# read predictions
+	pred = {}
+	with open(predfile, "r") as f:
+		for line in f:
+			if line[0] != "#":
+				line = line.rstrip("\n").split("\t")
+				pred[line[0]] = line[1:]
 	
 	# output only false lines in modified format
 	correct = {}
@@ -88,74 +105,76 @@ if __name__ == "__main__":
 	depth = 0
 	counter = 0
 
-	for seq, path in ref.items():
+	for seq_id, ref_lineage in ref.items():
 		try:
 			counter += 1
-			#print path, pred[seq]
-			plen = min( len( path ), len( pred[seq]) )
-			for otax, ptax in zip( path, pred[seq] ):
-				if ptax == "":
+			# print path, pred[seq]
+			plen = min(len(ref_lineage), len(pred[seq_id]))
+			for ref_tax, pred_tax in zip(ref_lineage, pred[seq_id]):
+				if pred_tax == class_for_missing_predictions:
 					plen -= 1
-				elif unknown_labels and otax == "":
+				elif unknown_labels and ref_tax == "":
 					try:
-						unknowns[plen] += weight[seq]
+						unknowns[plen] += weight[seq_id]
 					except KeyError:
-						unknowns[plen] = weight[seq]
+						unknowns[plen] = weight[seq_id]
 					break
-				elif ptax == otax:
+				elif pred_tax == ref_tax:
 					try:
-						correct[plen] += weight[seq]
+						correct[plen] += weight[seq_id]
 					except KeyError:
-						correct[plen] = weight[seq]
+						correct[plen] = weight[seq_id]
 					break
 				else:
 					try:
-						incorrect[plen] += weight[seq]
+						incorrect[plen] += weight[seq_id]
 					except KeyError:
-						incorrect[plen] = weight[seq]
+						incorrect[plen] = weight[seq_id]
 					break
 			if not plen:
 				try:
-					correct[plen] += weight[seq]
+					correct[plen] += weight[seq_id]
 				except KeyError:
-					correct[plen] = weight[seq]
-			depth = max( depth, plen )
-			del pred[seq] #remove entry from predictions
-		except KeyError: #handle no prediction as root assignment
+					correct[plen] = weight[seq_id]
+			depth = max(depth, plen)
+			del pred[seq_id]  # remove entry from predictions
+		except KeyError:
+			# handle no prediction as root assignment
 			try:
-				correct[0] += weight[seq]
+				correct[0] += weight[seq_id]
 			except KeyError:
-				correct[0] = weight[seq]
-			#stderr.write( "%s not found in prediction file\n" % (seq) )
+				correct[0] = weight[seq_id]
+			# stderr.write( "%s not found in prediction file\n" % (seq) )
 
-	for seq, path in pred.items():
+	for seq_id, pred_lineage in pred.items():
 		counter += 1
-		plen = len( path )
-		for tax in path:
-			if tax != "":
+		plen = len(pred_lineage)
+		for tax in pred_lineage:
+			if tax != class_for_missing_predictions:
 				try:
-					unknowns[plen] += weight[seq]
+					unknowns[plen] += weight[seq_id]
 				except KeyError:
-					unknowns[plen] = weight[seq]
+					unknowns[plen] = weight[seq_id]
 				break
 			else:
 				plen -= 1
 		if not plen:
 			try:
-				unknowns[0] += weight[seq]
+				unknowns[0] += weight[seq_id]
 			except KeyError:
-				unknowns[0] = weight[seq]
-		depth = max( depth, plen )
+				unknowns[0] = weight[seq_id]
+		depth = max(depth, plen)
 
-	if type( weight ) == dict:
-		assert sum( correct.values() + incorrect.values() + unknowns.values() ) == sum( weight.values() )
+	if type(weight) == dict:
+		assert sum(correct.values() + incorrect.values() + unknowns.values()) == sum(weight.values())
 	else:
-		assert counter == sum( correct.values() + incorrect.values() + unknowns.values() )
+		assert counter == sum(correct.values() + incorrect.values() + unknowns.values())
 
 	print "depth\ttrue\tfalse\tunknown"
 	if scale == 1:
-		for l in range( depth + 1 ):
-			print "%d\t%d\t%d\t%d" % (l, correct.get( l, 0 ), incorrect.get( l, 0 ), unknowns.get( l, 0 ))
+		for l in range(depth + 1):
+			print "%d\t%d\t%d\t%d" % (l, correct.get(l, 0), incorrect.get(l, 0), unknowns.get(l, 0))
 	else:
-		for l in range( depth + 1 ):
-			print "%d\t%.2f\t%.2f\t%.2f" % (l, scale*correct.get( l, 0 ), scale*incorrect.get( l, 0 ), scale*unknowns.get( l, 0 ))
+		for l in range(depth + 1):
+			print "%d\t%.2f\t%.2f\t%.2f" % (l, scale*correct.get(l, 0), scale*incorrect.get(l, 0), scale*unknowns.get(l, 0))
+
