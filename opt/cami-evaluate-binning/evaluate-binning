@@ -94,6 +94,7 @@ else # raw file
 	fi
 fi
 
+
 func_supervised ()
 {
   gold_bin_file=$1
@@ -228,6 +229,7 @@ func_unsupervised_hybrid ()
   cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
 }
 
+
 func_split ()
 {
   func_eval="$1"
@@ -235,9 +237,16 @@ func_split ()
   template="$3"
   prefix_index=0
   SPLIT_WORK="$tmpdir/split_work.tsv"
-  sort_by_novelty.py \
-  -n "$file_path_categories" -g "$gold_binningfile" -q "$pred_binningfile" -s "$seqlenfile" \
-  -o "$tmpdir" > "$SPLIT_WORK"
+  if [[ "$func_eval" =~ .*unsupervised.* ]]
+  then
+    sort_by_novelty.py \
+    -n "$file_path_categories" -g "$gold_binningfile" -q "$pred_binningfile" -s "$seqlenfile" \
+    -o "$tmpdir" > "$SPLIT_WORK"
+  else
+    sort_by_novelty.py \
+    -n "$file_path_categories" -g "$gold_binningfile" -q "$pred_binningfile" -s "$seqlenfile" \
+    -o "$tmpdir" "-tax" > "$SPLIT_WORK"
+  fi
   echo "---" > "biobox.yaml"
   echo "version: 0.10.0" >> "biobox.yaml"
   echo "results:" >> "biobox.yaml"
@@ -249,27 +258,30 @@ func_split ()
   done < "$SPLIT_WORK"
 }
 
+
 if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
+  echo "taxonomic"
   func_supervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" ""
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
 elif [ "$eval_mode" == "unsupervised" ]; then # unsupervised binning
+  echo "unsupervised"
   func_unsupervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" ""
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
 elif [ "$eval_mode" == "hybrid" ]; then # hybrid binning
   func_unsupervised_hybrid "$gold_binningfile" "$pred_binningfile" "$seqlenfile" ""
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
 elif [ "$eval_mode" == "taxonomic_novelties" ]; then  # taxonomic binning
-  # echo "taxonomic_novelties"
+  echo "taxonomic_novelties"
   file_path_category="$BBX_OPTDIR/novelty_complete.tsv"
   file_path_template="$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic_template.yaml"
   func_split func_supervised "$file_path_category" "$file_path_template"
 elif [ "$eval_mode" == "unsupervised_novelties" ]; then # unsupervised binning
-  # echo "unsupervised_novelties"
+  echo "unsupervised_novelties"
   file_path_category="$BBX_OPTDIR/novelty_complete.tsv"
   file_path_template="$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised_template.yaml"
   func_split func_unsupervised "$file_path_category" "$file_path_template"
 elif [ "$eval_mode" == "hybrid_novelties" ]; then # unsupervised binning
-  # echo "unsupervised_hybrid"
+  echo "unsupervised_hybrid"
   file_path_category="$BBX_OPTDIR/novelty_complete.tsv"
   file_path_template="$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised_template.yaml"
   func_split func_unsupervised_hybrid "$file_path_category" "$file_path_template"
