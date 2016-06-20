@@ -216,8 +216,8 @@ func_unsupervised_hybrid ()
   #[ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
   [ ! -r "$gold_taxfile" ] && binning2tsv --type taxon < "${gold_bin_file}" > "$gold_taxfile"
   # [ ! -r "$gold_racolfile" ] && tax2racol -t "$taxdir" -u "" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
-  echo -e "species\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom" > "$gold_racolfile"
-  awk -F $'\t' '{printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\n",$2,$2,$2,$2,$2,$2,$2)}' "${gold_bin_file}" >> "$gold_racolfile"
+  echo -e "#identifier\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom" > "$gold_racolfile"
+  awk -F $'\t' '{printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",$1,$2,$2,$2,$2,$2,$2,$2)}' "${gold_taxfile}" >> "$gold_racolfile"
   # paste <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") >> "$gold_racolfile"
 
   # generate taxonomic prediction files
