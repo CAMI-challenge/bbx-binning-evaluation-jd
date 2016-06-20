@@ -130,18 +130,24 @@ func_supervised ()
   tax2racol -t "$taxdir" -u "$pred_ic" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
 
   # generate confusion matrix
+  echo "generate confusion matrix"
   cmatfile="$tmpdir/${prefix}pred.cmat"
   /usr/bin/time -v confusionmatrix -c "$pred_ic" --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seq_len_file" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
 
   # evaluation
+  echo "eval "
   /usr/bin/time -v count-depth_true_false_unknown -c "$pred_ic" --labels "$gold_racolfile" --predictions "$pred_racolfile" --weights "$seq_len_file" --scale .001 > "${prefix}absolute_counts.tsv" --with-unknown-labels #, in kb
+  echo "per bin"
   /usr/bin/time -v cmat2perbinstats < "$cmatfile" > "${prefix}perbin_stats.tsv"
+  echo "summary"
   cmat2summarystats -t 0.95 < "$cmatfile" > "${prefix}summary_stats_95.tsv"
   cmat2summarystats -t 0.99 < "$cmatfile" > "${prefix}summary_stats_99.tsv"
   /usr/bin/time -v cmat2summarystats < "$cmatfile" > "${prefix}summary_stats.tsv"
+  echo "heatmap"
   /usr/bin/time -v cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg < "$cmatfile"
   #cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
   #cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
+  echo "ari"
   cmat2unsupervised --ignore-class ",$pred_ic" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
   /usr/bin/time -v cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
 }
