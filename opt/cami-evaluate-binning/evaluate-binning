@@ -133,7 +133,7 @@ func_supervised ()
   # generate confusion matrix
   echo "generate confusion matrix"
   cmatfile="$tmpdir/${prefix}pred.cmat"
-  /usr/bin/time -v confusionmatrix -c "$pred_ic" --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seq_len_file" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
+  confusionmatrix -c "$pred_ic" --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seq_len_file" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
 
   # evaluation
   echo "eval "
