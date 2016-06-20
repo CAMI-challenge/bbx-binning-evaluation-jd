@@ -136,17 +136,22 @@ func_supervised ()
 
   # evaluation
   echo "eval "
-  /usr/bin/time -v count-depth_true_false_unknown -c "$pred_ic" --labels "$gold_racolfile" --predictions "$pred_racolfile" --weights "$seq_len_file" --scale .001 > "${prefix}absolute_counts.tsv" --with-unknown-labels #, in kb
+  /usr/bin/time -v count-depth_true_false_unknown -c "$pred_ic" --labels "$gold_racolfile" --predictions "$pred_racolfile" --weights "$seq_len_file" --scale .001 --with-unknown-labels > "${prefix}absolute_counts.tsv" #, in kb
+  /usr/bin/time -v count-depth_true_false_unclassified_unknown -c "$pred_ic" --labels "$gold_racolfile" --predictions "$pred_racolfile" --weights "$seq_len_file" --scale .001 --with-unknown-labels > "${prefix}absolute_counts_per_rank.tsv" #, in kb
+
   echo "per bin"
   /usr/bin/time -v cmat2perbinstats < "$cmatfile" > "${prefix}perbin_stats.tsv"
+
   echo "summary"
   cmat2summarystats -t 0.95 < "$cmatfile" > "${prefix}summary_stats_95.tsv"
   cmat2summarystats -t 0.99 < "$cmatfile" > "${prefix}summary_stats_99.tsv"
   /usr/bin/time -v cmat2summarystats < "$cmatfile" > "${prefix}summary_stats.tsv"
+
   echo "heatmap"
   /usr/bin/time -v cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg < "$cmatfile"
   #cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
   #cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
+
   echo "ari"
   cmat2unsupervised --ignore-class ",$pred_ic" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
   /usr/bin/time -v cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"

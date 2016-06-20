@@ -39,10 +39,19 @@
     value: {prefix}summary_stats_95.tsv
   - name: ({comment}) absolute counts per taxonmic rank
     category: {comment}
-    description: Numbers of true, false and unknown data in kb (positions) for each rank.
+    description: >
+        Numbers of true, false and unknown data in kb (positions) for each rank.
     type: tsv
     inline: false
     value: {prefix}absolute_counts.tsv
+  - name: ({comment}) absolute counts per taxonmic rank isolated
+    category: {comment}
+    description: >
+        Numbers of true, false and unknown data in kb (positions) for each rank.
+        A prediction is also check for higher ranks.
+    type: tsv
+    inline: false
+    value: {prefix}absolute_counts_per_rank.tsv
   - name: ({comment}) entropy, rand index, adjusted rand index
     category: {comment}
     description: > 

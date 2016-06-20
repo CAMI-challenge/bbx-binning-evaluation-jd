@@ -41,6 +41,14 @@ results:
     type: tsv
     inline: false
     value: absolute_counts.tsv
+  - name: absolute counts per taxonmic rank isolated
+    category: {comment}
+    description: >
+        Numbers of true, false and unknown data in kb (positions) for each rank.
+        A prediction is also check for higher ranks.
+    type: tsv
+    inline: false
+    value: absolute_counts_per_rank.tsv
   - name: entropy, rand index, adjusted rand index
     description: >
         Entropy, Rand index and adjusted Rand index for each level that was evaluated.
