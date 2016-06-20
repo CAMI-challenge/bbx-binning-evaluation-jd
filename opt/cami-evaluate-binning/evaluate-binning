@@ -194,6 +194,12 @@ func_unsupervised_hybrid ()
   seq_len_file=$3
   prefix=$4
   # echo "unsupervised g:$gold_bin_file q:$query_bin_file"
+  taxdir="$bbx_arguments_databases_taxonomy_path"
+
+  if ! [ -d "$taxdir" -a -r "$taxdir/names.dmp" -a -r "$taxdir/nodes.dmp" ]; then
+    echo "Cannot read input taxonomy in '$taxdir'."
+    exit 1
+  fi
 
   # simple variables
   ranks='species,genus,family,order,class,phylum,superkingdom'
