@@ -118,6 +118,7 @@ if __name__ == "__main__":
 				counter += 1
 				# print path, pred[seq]
 				plen = min(len(ref_lineage), len(pred[seq_id]))
+				depth = max(depth, plen)
 				for ref_tax, pred_tax in zip(ref_lineage, pred[seq_id]):
 					if pred_tax == class_for_missing_predictions:
 						try:
@@ -145,7 +146,6 @@ if __name__ == "__main__":
 						correct[plen] += weight[seq_id]
 					except KeyError:
 						correct[plen] = weight[seq_id]
-				depth = max(depth, plen)
 				del pred[seq_id]  # remove entry from predictions
 			except KeyError:
 				# handle no prediction as root assignment
@@ -158,13 +158,13 @@ if __name__ == "__main__":
 	for seq_id, pred_lineage in pred.items():
 		counter += 1
 		plen = len(pred_lineage)
+		depth = max(depth, plen)
 		for tax in pred_lineage:
 			if tax != class_for_missing_predictions:
 				try:
 					unknowns[plen] += weight[seq_id]
 				except KeyError:
 					unknowns[plen] = weight[seq_id]
-				break
 			else:
 				plen -= 1
 		if not plen:
@@ -172,7 +172,6 @@ if __name__ == "__main__":
 				unknowns[0] += weight[seq_id]
 			except KeyError:
 				unknowns[0] = weight[seq_id]
-		depth = max(depth, plen)
 
 	#if isinstance(weight, dict):
 	#	assert sum(correct.values() + incorrect.values() + unknowns.values()) == sum(weight.values())
