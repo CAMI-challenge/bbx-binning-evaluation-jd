@@ -241,31 +241,9 @@ func_split ()
   echo "---" > "biobox.yaml"
   echo "version: 0.10.0" >> "biobox.yaml"
   echo "results:" >> "biobox.yaml"
-  template=
   while IFS=$'\t' read novelty gold_path query_path seqlen_file;
   do
-    func_unsupervised "$gold_path" "$query_path" "$seqlen_file" "${prefix_index}_"
-    format_text.py "$template" "${prefix_index}_" "$novelty" >> "biobox.yaml"
-    prefix_index=$((prefix_index+1))
-  done < "$SPLIT_WORK"
-}
-
-func_supervised_split ()
-{
-  file_path_categories="$1"
-  prefix_index=0
-  SPLIT_WORK="$tmpdir/split_work.tsv"
-  sort_by_novelty.py \
-  -n "$BBX_OPTDIR/novelty_complete.tsv" -g "$gold_binningfile" -q "$pred_binningfile" -s "$seqlenfile" \
-  -o "$tmpdir" -tax > "$SPLIT_WORK"
-  echo "---" > "biobox.yaml"
-  echo "version: 0.10.0" >> "biobox.yaml"
-  echo "results:" >> "biobox.yaml"
-  template="$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic_template.yaml"
-  while IFS=$'\t' read novelty gold_path query_path seqlen_file;
-  do
-    #echo "$gold_path $query_path $seqlen_file"
-    func_supervised "$gold_path" "$query_path" "$seqlen_file" "${prefix_index}_"
+    "$func_eval" "$gold_path" "$query_path" "$seqlen_file" "${prefix_index}_"
     format_text.py "$template" "${prefix_index}_" "$novelty" >> "biobox.yaml"
     prefix_index=$((prefix_index+1))
   done < "$SPLIT_WORK"
