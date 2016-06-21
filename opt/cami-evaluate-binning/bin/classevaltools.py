@@ -280,7 +280,11 @@ class ConfusionMatrix:
 		rand = 1. + (2.0*all_pair_sum - row_pair_sum - col_pair_sum)/total_pair_sum
 		# adjusted rand index
 		t1 = row_pair_sum * col_pair_sum / total_pair_sum
-		arand = (all_pair_sum - t1) / ((row_pair_sum + col_pair_sum)/2.0 - t1)
+		
+		tmp = ((row_pair_sum + col_pair_sum)/2.0 - t1)
+		if tmp == 0:
+			return rand, float_nan
+		arand = (all_pair_sum - t1) / tmp
 		return rand, arand
 
 	def plot_matrix(
