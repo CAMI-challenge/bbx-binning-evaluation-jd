@@ -110,6 +110,7 @@ func_supervised ()
   fi
 
   # simple variables
+  pred_ic="unclassified"
   ranks='species,genus,family,order,class,phylum,superkingdom'
   taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
   pred_taxfile="$tmpdir/${prefix}pred.tax"
@@ -123,10 +124,9 @@ func_supervised ()
   # refresh cache
   #[ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
   [ ! -r "$gold_taxfile" ] && binning2tsv --type taxon < "${gold_bin_file}" > "$gold_taxfile"
-  [ ! -r "$gold_racolfile" ] && tax2racol -t "$taxdir" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
+  [ ! -r "$gold_racolfile" ] && tax2racol -t "$taxdir" -u "" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
 
   # generate taxonomic prediction files
-  pred_ic="unclassified"
   binning2tsv --type taxon < "$query_bin_file" > "$pred_taxfile"
   tax2racol -t "$taxdir" -u "$pred_ic" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
 
@@ -148,14 +148,14 @@ func_supervised ()
   cmat2summarystats -t 0.99 -i ",$pred_ic" < "$cmatfile" > "${prefix}summary_stats_99.tsv"
   cmat2summarystats -i ",$pred_ic" < "$cmatfile" > "${prefix}summary_stats.tsv"
 
-  echo "heatmap"
-  cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg < "$cmatfile"
+  echo "ari"
   #cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
   #cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
-
-  echo "ari"
   cmat2unsupervised --ignore-class ",$pred_ic" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
   cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
+
+  echo "heatmap"
+  cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg < "$cmatfile"
 }
 
 
@@ -166,24 +166,50 @@ func_unsupervised ()
   seq_len_file=$3
   prefix=$4
   # echo "unsupervised g:$gold_bin_file q:$query_bin_file"
+  taxdir="$bbx_arguments_databases_taxonomy_path"
+
+  if ! [ -d "$taxdir" -a -r "$taxdir/names.dmp" -a -r "$taxdir/nodes.dmp" ]; then
+    echo "Cannot read input taxonomy in '$taxdir'."
+    exit 1
+  fi
+
   # simple variables
-  gold_tabfile="$cache/${prefix}gold_${goldversion}.tsv"
+  pred_ic="unclassified"
+  ranks='species,genus,family,order,class,phylum,superkingdom'
+  taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
+  #gold_tabfile="$cache/${prefix}gold_${goldversion}.tsv"
   pred_tabfile="$tmpdir/${prefix}pred.tsv"
+  pred_racolfile="$tmpdir/${prefix}pred.racol"
+
+  # cached variables
+  gold_taxfile="$cache/${prefix}gold_${goldversion}.tax"
+  gold_racolfile="$cache/${prefix}gold_${goldversion}_${taxversion}.racol"
 
   # refresh cache
-  [ ! -r "$gold_tabfile" ] && binning2tsv --type classname < "$gold_bin_file" > "$gold_tabfile"
+  #[ ! -r "$gold_tabfile" ] && binning2tsv --type classname < "$gold_bin_file" > "$gold_tabfile"
+  [ ! -r "$gold_taxfile" ] && binning2tsv --type taxon < "${gold_bin_file}" > "$gold_taxfile"
+  #temp_file="$tmpdir/${prefix}temp.tax"
+  # > "$temp_file"
+  echo -e "#identifier\tstrain\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom" > "$gold_racolfile"
+  paste <(binning2tsv --type classname < "${gold_bin_file}") <(tax2racol -t "$taxdir" -u "" --ranks "$ranks" < "$gold_taxfile" | tail -n +2 | cut -d -f 2-) >> "$gold_racolfile"
 
   # generate prediction file
   binning2tsv --type classname < "$query_bin_file" > "$pred_tabfile"
+  echo -e "#identifier\tstrain\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom" > "$pred_racolfile"
+  awk -F $'\t' '{printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",$1,$2,$2,$2,$2,$2,$2,$2,$2)}' "${pred_tabfile}" >> "$pred_racolfile"
+  # paste <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") >> "$gold_racolfile"
 
   # generate confusion matrix
   cmatfile="$tmpdir/${prefix}pred.cmat"
-  confusionmatrix --title 'binning' --rows "$gold_tabfile" --columns "$pred_tabfile" --weights "$seq_len_file" --matrix-form sparse --allow-missing-columns --sort-columns --sort-rows > "$cmatfile"
+  #confusionmatrix --title 'binning' --rows "$gold_tabfile" --columns "$pred_tabfile" --weights "$seq_len_file" --matrix-form sparse --allow-missing-columns --sort-columns --sort-rows > "$cmatfile"
+  confusionmatrix -c "$pred_ic" --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seq_len_file" --matrix-form sparse --allow-missing-columns > "$cmatfile"
 
   # evaluation
-  cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg --nolabels --unsupervised < "$cmatfile"
-  cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
-  cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
+  cmat2unsupervised --ignore-class ",$pred_ic" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
+  cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
+  #cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg --nolabels --unsupervised < "$cmatfile"
+  #cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
+  #cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
 }
 
 
@@ -202,6 +228,7 @@ func_unsupervised_hybrid ()
   fi
 
   # simple variables
+  pred_ic="unclassified"
   ranks='species,genus,family,order,class,phylum,superkingdom'
   taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
   pred_taxfile="$tmpdir/${prefix}pred.tax"
@@ -214,25 +241,30 @@ func_unsupervised_hybrid ()
 
   # refresh cache
   #[ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
-  [ ! -r "$gold_taxfile" ] && binning2tsv --type classname < "${gold_bin_file}" > "$gold_taxfile"
-  # [ ! -r "$gold_racolfile" ] && tax2racol -t "$taxdir" -u "" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
-  echo -e "#identifier\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom" > "$gold_racolfile"
-  awk -F $'\t' '{printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",$1,$2,$2,$2,$2,$2,$2,$2)}' "${gold_taxfile}" >> "$gold_racolfile"
+  [ ! -r "$gold_taxfile" ] && binning2tsv --type taxon < "${gold_bin_file}" > "$gold_taxfile"
+  #temp_file="$tmpdir/${prefix}temp.tax"
+  #tax2racol -t "$taxdir" -u "" --ranks "$ranks" < "$gold_taxfile" > "$temp_file"
+  echo -e "#identifier\tstrain\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom" > "$gold_racolfile"
+  paste <(binning2tsv --type classname < "${gold_bin_file}") <(tax2racol -t "$taxdir" -u "" --ranks "$ranks" < "$gold_taxfile" | tail -n +2 | cut -d -f 2-) >> "$gold_racolfile"
+  #paste <(binning2tsv --type classname < "${gold_bin_file}") <(tail -n +2 "$temp_file" | cut -d -f 2-) >> "$gold_racolfile"
+
+  #awk -F $'\t' '{printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",$1,$2,$2,$2,$2,$2,$2,$2)}' "${gold_taxfile}" >> "$gold_racolfile"
   # paste <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") >> "$gold_racolfile"
 
   # generate taxonomic prediction files
-  pred_ic="unknown_tax"
   binning2tsv --type taxon < "$query_bin_file" > "$pred_taxfile"
-  tax2racol -t "$taxdir" -u "$pred_ic" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
+  echo -e "#identifier\tstrain\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom" > "$pred_racolfile"
+  paste <(binning2tsv --type taxon < "${query_bin_file}") <(tax2racol -t "$taxdir" -u "$pred_ic" --ranks "$ranks" < "$pred_taxfile" | tail -n +2 | cut -d -f 2-) >> "$pred_racolfile"
+  #                                                            tax2racol -t "$taxdir" -u "$pred_ic" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
 
   # generate confusion matrix
   cmatfile="$tmpdir/${prefix}pred.cmat"
-  confusionmatrix --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seq_len_file" --matrix-form quadratic --allow-missing-columns > "$cmatfile"
+  confusionmatrix -c "$pred_ic" --rows "$gold_racolfile" --columns "$pred_racolfile" --weights "$seq_len_file" --matrix-form sparse --allow-missing-columns > "$cmatfile"
 
   # evaluation
-  cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg --nolabels --unsupervised < "$cmatfile"
   cmat2unsupervised --ignore-class ",$pred_ic" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
   cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
+  #cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg --nolabels --unsupervised < "$cmatfile"
 }
 
 
