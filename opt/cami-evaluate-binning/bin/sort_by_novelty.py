@@ -134,7 +134,7 @@ def main(path_novelty, path_gold, path_query, path_seq_length, is_supervised, ou
 
 	novelty_to_file_paths_seq_length = split_seq_file(sid_to_novelty, path_seq_length, out_dir)
 	novelty_to_file_paths_gold = split_gold_file(sid_to_novelty, path_gold, out_dir)
-	novelties = novelty_to_file_paths_gold.keys()
+	novelties = novelty_to_file_paths_seq_length.keys()
 	novelty_to_file_paths_query = split_query_file(sid_to_novelty, path_query, out_dir, is_supervised, novelties)
 
 	for novelty in novelties:
