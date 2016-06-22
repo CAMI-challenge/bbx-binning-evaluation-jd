@@ -94,6 +94,7 @@ else # raw file
 	fi
 fi
 
+pred_ic="unassigned"
 
 func_supervised ()
 {
@@ -110,7 +111,6 @@ func_supervised ()
   fi
 
   # simple variables
-  pred_ic="unclassified"
   ranks='species,genus,family,order,class,phylum,superkingdom'
   taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
   pred_taxfile="$tmpdir/${prefix}pred.tax"
@@ -141,7 +141,7 @@ func_supervised ()
   count-depth_true_false_unclassified_unknown -c "$pred_ic" --labels "$gold_racolfile" --predictions "$pred_racolfile" --weights "$seq_len_file" --scale .001 --with-unknown-labels > "${prefix}absolute_counts_per_rank.tsv" #, in kb
 
   echo "per bin"
-  cmat2perbinstats < "$cmatfile" > "${prefix}perbin_stats.tsv"
+  cmat2perbinstats -i "$pred_ic" < "$cmatfile" > "${prefix}perbin_stats.tsv"
 
   echo "summary"
   cmat2summarystats -t 0.95 -i ",$pred_ic" < "$cmatfile" > "${prefix}summary_stats_95.tsv"
@@ -174,7 +174,7 @@ func_unsupervised ()
   fi
 
   # simple variables
-  pred_ic="unclassified"
+  #pred_ic="unclassified"
   ranks='species,genus,family,order,class,phylum,superkingdom'
   taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
   #gold_tabfile="$cache/${prefix}gold_${goldversion}.tsv"
@@ -196,7 +196,7 @@ func_unsupervised ()
   # generate prediction file
   binning2tsv --type classname < "$query_bin_file" > "$pred_tabfile"
   echo -e "#identifier\tstrain\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom" > "$pred_racolfile"
-  awk -F $'\t' '{printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",$1,$2,$2,$2,$2,$2,$2,$2,$2)}' "${pred_tabfile}" >> "$pred_racolfile"
+  awk -F $'\t' '{printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",$1,$2,$2,$2,$2,$2,$2,$2,$2)}' "${pred_tabfile}" >> "$pred_racolfile"
   # paste <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") <(cut -f2 "${gold_bin_file}") >> "$gold_racolfile"
 
   # generate confusion matrix
@@ -228,7 +228,7 @@ func_unsupervised_hybrid ()
   fi
 
   # simple variables
-  pred_ic="unclassified"
+  #pred_ic="unclassified"
   ranks='species,genus,family,order,class,phylum,superkingdom'
   taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
   pred_taxfile="$tmpdir/${prefix}pred.tax"
@@ -291,6 +291,7 @@ func_split ()
   echo "results:" >> "biobox.yaml"
   while IFS=$'\t' read novelty gold_path query_path seqlen_file;
   do
+    echo "$novelty"
     "$func_eval" "$gold_path" "$query_path" "$seqlen_file" "${prefix_index}_"
     format_text.py "$template" "${prefix_index}_" "$novelty" >> "biobox.yaml"
     prefix_index=$((prefix_index+1))

@@ -3,7 +3,7 @@
 
 from itertools import count
 from math import isnan, ceil, log
-# from sys import stderr
+from sys import stderr
 
 from numpy import array, empty, arange, mean, std, zeros
 
@@ -257,12 +257,12 @@ class ConfusionMatrix:
 		total_sum = 0.
 		row_pair_sum = 0.
 		col_sums = zeros(self._mat.shape[1])  # ignore_class entry simply remains zero
-		for cname, col in zip(self._rownames, self._mat):
-			if cname in ignore_class:
+		for rname, row in zip(self._rownames, self._mat):
+			if rname in ignore_class:
 				continue
 			row_sum = 0.
-			for i, rname, val in zip(count(), self._colnames, col):
-				if rname in ignore_class:
+			for i, cname, val in zip(count(), self._colnames, row):
+				if cname in ignore_class:
 					continue
 				all_pair_sum += npair(val)
 				row_sum += val
@@ -270,10 +270,10 @@ class ConfusionMatrix:
 			total_sum += row_sum
 			row_pair_sum += npair(row_sum)
 		col_pair_sum = npair(col_sums).sum()
-		# stderr.write("%.2f, %.2f, %.2f\n" % (all_pair_sum, row_pair_sum, col_pair_sum))
+		#stderr.write("%.2f, %.2f, %.2f\n" % (all_pair_sum, row_pair_sum, col_pair_sum))
 		
 		total_pair_sum = npair(total_sum)
-		# stderr.write("%.2f\n" % (total_pair_sum))
+		#stderr.write("%.2f\n" % (total_pair_sum))
 		if total_pair_sum == 0:
 			return float_nan, float_nan
 		# simple rand index
