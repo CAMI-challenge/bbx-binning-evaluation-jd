@@ -69,7 +69,7 @@ if __name__ == "__main__":
 		for psize, rsize, prec, rec, name in sorted(tmpstore, reverse=True):
 			print "%s\t%s\t%.2f\t%.2f\t%i\t%i" % (cmat.title, name, prec, rec, psize, rsize)
 		if unassigned_psize or unassigned_rsize:
-			print "%s\t%s\tnan\tnan\t%i\t%i" % (cmat.title, unassigned_class, unassigned_psize, unassigned_rsize)
+			print "%s\t%s\tnan\tnan\t%i\t%i" % (cmat.title, ",".join(unassigned_class), unassigned_psize, unassigned_rsize)
 		if unknown_psize or unknown_rsize:
 			print "%s\tunknown\tnan\tnan\t%i\t%i" % (cmat.title, unknown_psize, unknown_rsize)
 
