@@ -38,17 +38,22 @@ if __name__ == "__main__":
 
 	options = parser.parse_args()
 
-	ignore_class = set(options.ignore_class.split(','))
+	unassigned_class = set(options.ignore_class.split(','))
+	unknown_class = ""
 
 	# output extensive statistics table
 	print "instance\tclass\tprecision\trecall\tpredicted class size\treal class size"
-	upsize = ursize = 0
+	unknown_psize = unknown_rsize = unassigned_psize = unassigned_rsize = 0
 	for cmat in parseConfusionMatrix(stdin):
 		tmpstore = []
 		for name, psize, pcorrect in cmat.precision_freqs():
-			if name in ignore_class:
-				upsize = psize
-				ursize = cmat.recall_freq(name)[0]
+			if name in unassigned_class:
+				unassigned_psize = psize
+				unassigned_rsize = cmat.recall_freq(name)[0]
+				continue
+			if name in unknown_class:
+				unknown_psize = psize
+				unknown_rsize = cmat.recall_freq(name)[0]
 				continue
 			if float(psize) == 0:  # or math.isnan(float(psize)):
 				prec = float('nan')
@@ -63,6 +68,8 @@ if __name__ == "__main__":
 			tmpstore.append((psize, rsize, prec, rec, name))
 		for psize, rsize, prec, rec, name in sorted(tmpstore, reverse=True):
 			print "%s\t%s\t%.2f\t%.2f\t%i\t%i" % (cmat.title, name, prec, rec, psize, rsize)
-		if upsize or ursize:
-			print "%s\tunassigned\tnan\tnan\t%i\t%i" % (cmat.title, upsize, ursize)
+		if unassigned_psize or unassigned_rsize:
+			print "%s\t%s\tnan\tnan\t%i\t%i" % (cmat.title, unassigned_class, unassigned_psize, unassigned_rsize)
+		if unknown_psize or unknown_rsize:
+			print "%s\tunknown\tnan\tnan\t%i\t%i" % (cmat.title, unknown_psize, unknown_rsize)
 
