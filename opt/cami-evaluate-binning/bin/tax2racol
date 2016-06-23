@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # parse command line options
     try:
-        opts, args = getopt.getopt(argv[1:], 'ht:r:i', ['help', 'taxonomy-dir=', 'ranks=', 'show-identifiers'])
+        opts, args = getopt.getopt(argv[1:], 'ht:u:r:i', ['help', 'taxonomy-dir=', 'unknown-class=', 'ranks=', 'show-identifiers'])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err)  # will print something like "option -a not recognized"
@@ -51,6 +51,7 @@ if __name__ == "__main__":
     ranks = ["species", "genus", "family", "order", "class", "phylum", "superkingdom"]
     show_as_name = True
     taxonomy_dir = None
+    unknown_class = ""
 
     # option parsing
     for o, a in opts:
@@ -60,6 +61,8 @@ if __name__ == "__main__":
         # elif o in ("-t", "--taxonomy-backend-file"):
         elif o in ("-t", "--taxonomy-dir"):
             taxonomy_dir = a
+        elif o in ("-u", "--unknown-class"):
+            unknown_class = a
         elif o in ("-r", "--ranks"):
             ranks = a.split(",")
         elif o in ("-i", "--show-identifiers"):
@@ -93,6 +96,6 @@ if __name__ == "__main__":
             except ValueError:
                 stderr.write("error parsing, skipping line \"%s\"" % line)
                 continue
-            path = taxonomy.get_lineage_of_legal_ranks(taxid, ranks, default_value='', as_name=show_as_name)
+            path = taxonomy.get_lineage_of_legal_ranks(taxid, ranks, default_value=unknown_class, as_name=show_as_name, inherit_rank=True)
             print "%s\t%s" % (ident, "\t".join(path))
 
