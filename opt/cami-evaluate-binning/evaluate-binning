@@ -261,7 +261,7 @@ func_unsupervised_hybrid ()
   # evaluation
   cmat2unsupervised --ignore-class ",$pred_ic" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
   cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
-  #cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg --nolabels --unsupervised < "$cmatfile"
+  cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg --nolabels --unsupervised < "$cmatfile"
 }
 
 
