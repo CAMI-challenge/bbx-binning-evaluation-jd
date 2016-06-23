@@ -102,6 +102,8 @@ func_supervised ()
   query_bin_file=$2
   seq_len_file=$3
   prefix=$4
+  btype=${5:-taxon}
+
   # echo "supervised g:${gold_bin_file} q:$query_bin_file"
   taxdir="$bbx_arguments_databases_taxonomy_path"
 
@@ -112,24 +114,24 @@ func_supervised ()
 
   # simple variables
   ranks='species,genus,family,order,class,phylum,superkingdom'
-  taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
   pred_taxfile="$tmpdir/${prefix}pred.tax"
   pred_racolfile="$tmpdir/${prefix}pred.racol"
+  taxversion="$(taxonomy_version "$taxdir/nodes.dmp")"
   #taxsqlite="$cache/ncbi-taxonomy_${taxversion}.sqlite"
 
   # cached variables
   gold_taxfile="$cache/${prefix}gold_${goldversion}.tax"
   gold_racolfile="$cache/${prefix}gold_${goldversion}_${taxversion}.racol"
-
+  
   # refresh cache
   #[ ! -r "$taxsqlite" ] && ncbitax2sqlite -dmp "$taxdir" -db "$taxsqlite"
   [ ! -r "$gold_taxfile" ] && binning2tsv --type taxon < "${gold_bin_file}" > "$gold_taxfile"
   [ ! -r "$gold_racolfile" ] && tax2racol -t "$taxdir" -u "" --ranks "$ranks" < "$gold_taxfile" > "$gold_racolfile"
 
   # generate taxonomic prediction files
-  binning2tsv --type taxon < "$query_bin_file" > "$pred_taxfile"
+  binning2tsv --type "$btype" < "$query_bin_file" > "$pred_taxfile"
   tax2racol -t "$taxdir" -u "$pred_ic" --ranks "$ranks" < "$pred_taxfile" > "$pred_racolfile"
-
+  
   # generate confusion matrix
   echo "generate confusion matrix"
   cmatfile="$tmpdir/${prefix}pred.cmat"
@@ -149,8 +151,6 @@ func_supervised ()
   cmat2summarystats -i ",$pred_ic" < "$cmatfile" > "${prefix}summary_stats.tsv"
 
   echo "ari"
-  #cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
-  #cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
   cmat2unsupervised --ignore-class ",$pred_ic" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
   cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
 
@@ -207,11 +207,8 @@ func_unsupervised ()
   # evaluation
   cmat2unsupervised --ignore-class ",$pred_ic" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
   cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
-  #cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg --nolabels --unsupervised < "$cmatfile"
-  #cmat2unsupervised < "$cmatfile" > "${prefix}unsupervised_recall_stats.tsv"
-  #cmat2unsupervised --ignore-class "" < "$cmatfile" > "${prefix}unsupervised_precision_stats.tsv"
+  cmat2heatmap --description '' --basename "${prefix}cmat_heatmap_" --format svg --nolabels --unsupervised < "$cmatfile"
 }
-
 
 func_unsupervised_hybrid ()
 {
@@ -298,8 +295,11 @@ func_split ()
   done < "$SPLIT_WORK"
 }
 
-
-if [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
+if [ "$eval_mode" == "unsupervised_to_taxonomic" ]; then # transform to taxonomic and run accordingly
+  python "$BBX_OPTDIR/cami-evaluate-binning/bin/tax_from_unsupervised.py" "$pred_binningfile" "$gold_binningfile" "$tmpdir/tmp_binning"
+  func_supervised "$gold_binningfile" "$tmpdir/tmp_binning" "$seqlenfile" "" "classname"
+  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
+elif [ "$eval_mode" == "taxonomic" ]; then  # taxonomic binning
   echo "taxonomic"
   func_supervised "$gold_binningfile" "$pred_binningfile" "$seqlenfile" ""
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
@@ -337,6 +337,5 @@ if [ -n "${BBX_DBGMODE:-}" ] && [ "$BBX_DBGMODE" -gt 0 ]; then  # guarantee inte
   mkdir -p "$BBX_DBGDIR"  # will exist in newer base image
   mv "$tmpdir/"* "$BBX_DBGDIR/"
 else
-  echo "$tmpdir"
-  #rm -r "$tmpdir"
+  rm -r "$tmpdir"
 fi
