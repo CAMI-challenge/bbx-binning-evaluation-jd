@@ -178,7 +178,7 @@ if __name__ == "__main__":
 	#else:
 	#	weight.confirm(counter, correct, incorrect, unknowns)
 
-	print "depth\ttrue\tfalse\tunclassified\tunknown"
+	print "depth\ttrue\tfalse\tunassigned\tunknown"
 	if scale == 1:
 		for l in range(depth + 1):
 			print "%d\t%d\t%d\t%d\t%d" % (l, correct.get(l, 0), incorrect.get(l, 0), unknowns.get(l, 0))
