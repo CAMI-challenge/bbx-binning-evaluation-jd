@@ -316,11 +316,26 @@ elif [ "$eval_mode" == "taxonomic_novelties" ]; then  # taxonomic binning
   file_path_category="$BBX_OPTDIR/novelty_complete.tsv"
   file_path_template="$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic_template.yaml"
   func_split func_supervised "$file_path_category" "$file_path_template"
+elif [ "$eval_mode" == "taxonomic_uniqueness" ]; then  # taxonomic binning
+  echo "taxonomic_novelties"
+  file_path_category="$BBX_OPTDIR/unique_common.tsv"
+  file_path_template="$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic_template.yaml"
+  func_split func_supervised "$file_path_category" "$file_path_template"
+elif [ "$eval_mode" == "unsupervised_uniqueness" ]; then # unsupervised binning
+  echo "unsupervised_novelties"
+  file_path_category="$BBX_OPTDIR/unique_common.tsv"
+  file_path_template="$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised_template.yaml"
+  func_split func_unsupervised "$file_path_category" "$file_path_template"
 elif [ "$eval_mode" == "unsupervised_novelties" ]; then # unsupervised binning
   echo "unsupervised_novelties"
   file_path_category="$BBX_OPTDIR/novelty_complete.tsv"
   file_path_template="$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised_template.yaml"
   func_split func_unsupervised "$file_path_category" "$file_path_template"
+elif [ "$eval_mode" == "hybrid_uniqueness" ]; then # unsupervised binning
+  echo "unsupervised_hybrid_novelties"
+  file_path_category="$BBX_OPTDIR/unique_common.tsv"
+  file_path_template="$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised_template.yaml"
+  func_split func_unsupervised_hybrid "$file_path_category" "$file_path_template"
 elif [ "$eval_mode" == "hybrid_novelties" ]; then # unsupervised binning
   echo "unsupervised_hybrid_novelties"
   file_path_category="$BBX_OPTDIR/novelty_complete.tsv"
