@@ -7,7 +7,7 @@
         Excluding not predicted.
     type: tsv
     inline: false
-    value: {prefix}unsupervised_precision_stats
+    value: {prefix}unsupervised_precision_stats.tsv
   - name: ({comment}) entropy, rand index, adjusted rand index
     category: {comment}
     description: >
@@ -17,7 +17,7 @@
         Including not predicted.
     type: tsv
     inline: false
-    value: {prefix}unsupervised_recall_stats
+    value: {prefix}unsupervised_recall_stats.tsv
   - name: ({comment}) confusion matrix heatmap
     category: {comment}
     description: Binning confusion matrix as heatmap with intensities scaled by the number of bp. Real genomes are on the y axis and predicted bins on the x axis. Unknown provenance or unbinned sequences are indicated in grey.
