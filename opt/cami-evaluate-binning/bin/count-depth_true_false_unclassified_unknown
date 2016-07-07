@@ -115,11 +115,15 @@ if __name__ == "__main__":
 			ref_lineage = line[1:]
 			# for seq_id, ref_lineage in ref.items():
 			try:
+				if seq_id in pred:
+					pred_lineage = pred[seq_id]
+				else:
+					pred_lineage = [class_for_missing_predictions] * len(ref_lineage)
 				counter += 1
 				# print path, pred[seq]
-				plen = min(len(ref_lineage), len(pred[seq_id]))
+				plen = min(len(ref_lineage), len(pred_lineage))
 				depth = max(depth, plen)
-				for ref_tax, pred_tax in zip(ref_lineage, pred[seq_id]):
+				for ref_tax, pred_tax in zip(ref_lineage, pred_lineage):
 					if pred_tax == class_for_missing_predictions:
 						try:
 							unclassified[plen] += weight[seq_id]
@@ -146,7 +150,8 @@ if __name__ == "__main__":
 						correct[plen] += weight[seq_id]
 					except KeyError:
 						correct[plen] = weight[seq_id]
-				del pred[seq_id]  # remove entry from predictions
+				if seq_id in pred:
+					del pred[seq_id]  # remove entry from predictions
 			except KeyError:
 				# handle no prediction as root assignment
 				try:
@@ -173,16 +178,17 @@ if __name__ == "__main__":
 			except KeyError:
 				unknowns[0] = weight[seq_id]
 
-	#if isinstance(weight, dict):
-	#	assert sum(correct.values() + incorrect.values() + unknowns.values()) == sum(weight.values())
-	#else:
-	#	weight.confirm(counter, correct, incorrect, unknowns)
+	# if isinstance(weight, dict):
+	# 	assert sum(correct.values() + incorrect.values() + unknowns.values()) == sum(weight.values())
+	# else:
+	# 	weight.confirm(counter, correct, incorrect, unknowns)
 
 	print "depth\ttrue\tfalse\tunassigned\tunknown"
 	if scale == 1:
 		for l in range(depth + 1):
-			print "%d\t%d\t%d\t%d\t%d" % (l, correct.get(l, 0), incorrect.get(l, 0), unknowns.get(l, 0))
+			print "%d\t%d\t%d\t%d\t%d" % (
+				l, correct.get(l, 0), incorrect.get(l, 0), unclassified.get(l, 0), unknowns.get(l, 0))
 	else:
 		for l in range(depth + 1):
-			print "%d\t%.2f\t%.2f\t%.2f\t%.2f" % (l, scale*correct.get(l, 0), scale*incorrect.get(l, 0), scale*unclassified.get(l, 0), scale*unknowns.get(l, 0))
-
+			print "%d\t%.2f\t%.2f\t%.2f\t%.2f" % (
+				l, scale*correct.get(l, 0), scale*incorrect.get(l, 0), scale*unclassified.get(l, 0), scale*unknowns.get(l, 0))
