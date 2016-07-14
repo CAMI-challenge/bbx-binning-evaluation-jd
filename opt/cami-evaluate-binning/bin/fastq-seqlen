@@ -9,7 +9,7 @@
 }
 
 ! /^@/ {
-  sum+=length($0);
+  sum+=length($0)*2;
 }
 
 END {
