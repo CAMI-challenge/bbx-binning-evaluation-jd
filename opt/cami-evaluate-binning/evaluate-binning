@@ -62,7 +62,7 @@ goldversion="$(md5sum < "$gold_binningfile" | cut -d ' ' -f 1)"
 seqlenfile="$cache/gold_${goldversion}.seqlen"
 
 # general temporary variables
-tmpdir="$(mktemp -d -p $cache)"
+tmpdir="$(mktemp -d)"
 chmod 755 "$tmpdir"
 # echo "Temp dir: '$tmpdir'"
 
@@ -72,6 +72,7 @@ if [[ "$ISGZ" == "application/gzip;" ]]; then # compressed
 	echo "Detected compressed sequence file"
 	if [[ $bbx_arguments_sequences_format == "bioboxes.org:/fastq" ]]; then
 		echo "Analysing fastq sequence file"
+		# counting every second line and doubling sequence length, assumptions made for read pairs of same length
 		[ ! -r "$seqlenfile" ] && awk 'NR % 8 == 1 || NR % 8 == 2' <(gzip -dc $fastafile) | fastq-seqlen > "$seqlenfile"
 	elif [ $bbx_arguments_sequences_format == "bioboxes.org:/fasta" ]; then
 		echo "Analysing fasta sequence file"
