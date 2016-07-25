@@ -9,7 +9,7 @@ def get_genomes(mapping_file): # the mapping file needs to follow the exact form
 	c_gen = {}
 	lengths = {}
 	for line in mapping:
-		if (line.startswith('#')):
+		if line.startswith('#'):
 			continue
 		parts = line.split()
 		contig = parts[0]
@@ -27,7 +27,7 @@ def get_genomes(mapping_file): # the mapping file needs to follow the exact form
 			gen_length[gen_id] = length
 			gen_map[gen_id] = [contig]
 	mapping.close()
-	return (gen_length, gen_map, c_gen, lengths)
+	return gen_length, gen_map, c_gen, lengths
 
 def map_genomes(filename, gsa, out):
 	participant = open(filename)
