@@ -87,10 +87,15 @@ def read_participant_file(input_stream):
 	header, column_names = read_header(input_stream)
 	if "SEQUENCEID" not in column_names:
 		raise RuntimeError("Column not found: {}".format("BINID"))
-	if "BINID" not in column_names:
-		raise RuntimeError("Column not found: {}".format("BINID"))
+
+	if "BINID" in column_names:
+		index_value = column_names["BINID"]
+	elif "TAXID" in column_names:
+		index_value = column_names["TAXID"]
+	else:
+		raise RuntimeError("Column not found: {}".format("BINID/TAXID"))
+
 	index_key = column_names["SEQUENCEID"]
-	index_value = column_names["BINID"]
 
 	return read_rows(input_stream, index_key, index_value)
 
@@ -143,7 +148,12 @@ def map_genomes(file_path_query, file_path_mapping, file_path_output):
 	with open(file_path_output, 'w') as write_handler:
 		write_handler.write("Instance\tclass\tprecision\trecall\tpredicted class size\treal class size\n")
 		for predicted_bin in bin_metrics:
-			write_handler.write("strain\t%s\t%s\t%s\t%s\t%s\n" % (bin_metrics[predicted_bin][0],bin_metrics[predicted_bin][1], bin_metrics[predicted_bin][2],bin_id_to_total_lengths[predicted_bin],bin_metrics[predicted_bin][3]))
+			write_handler.write("strain\t%s\t%s\t%s\t%s\t%s\n" % (
+				bin_metrics[predicted_bin][0],
+				bin_metrics[predicted_bin][1],
+				bin_metrics[predicted_bin][2],
+				bin_id_to_total_lengths[predicted_bin],
+				bin_metrics[predicted_bin][3]))
 		for genid in genome_id_to_list_of_contigs:
 			if genid not in mapped:
 				write_handler.write("strain\t%s\t%s\t%s\t%s\t%s\n" % (genid, 0, 0, 0, genome_id_to_total_length[genid]))
