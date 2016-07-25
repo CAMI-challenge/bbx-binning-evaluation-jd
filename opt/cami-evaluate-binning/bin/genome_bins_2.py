@@ -24,14 +24,14 @@ def get_genome_mapping(mapping_file, is_contigs=True):
 		anonymous_contig_id_to_genome_id = {}
 		anonymouse_contig_id_to_lengths = {}
 		for line in mapping:
-			if line.startswith('#'):
+			if len(line.strip()) == 0 or line.startswith('#'):
 				continue
 			if is_contigs:
 				anonymous_contig_id, genome_id, tax_id, contig_id, number_reads, start_position, end_position, total_length = line.split('\t')
-				total_length = long(total_length)
+				total_length = float(total_length)
 			else:
 				anonymous_contig_id, genome_id, tax_id, contig_id, number_reads = line.split('\t')
-				total_length = 150 * 2  # doubled because mapping file contains paired reads
+				total_length = 150. * 2  # doubled because mapping file contains paired reads
 
 			anonymouse_contig_id_to_lengths[anonymous_contig_id] = total_length
 			anonymous_contig_id_to_genome_id[anonymous_contig_id] = genome_id
