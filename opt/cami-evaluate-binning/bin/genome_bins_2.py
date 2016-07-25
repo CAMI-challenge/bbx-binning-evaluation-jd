@@ -28,6 +28,7 @@ def get_genome_mapping(mapping_file, is_contigs=True):
 				continue
 			if is_contigs:
 				anonymous_contig_id, genome_id, tax_id, contig_id, number_reads, start_position, end_position, total_length = line.split('\t')
+				total_length = long(total_length)
 			else:
 				anonymous_contig_id, genome_id, tax_id, contig_id, number_reads = line.split('\t')
 				total_length = 150 * 2  # doubled because mapping file contains paired reads
