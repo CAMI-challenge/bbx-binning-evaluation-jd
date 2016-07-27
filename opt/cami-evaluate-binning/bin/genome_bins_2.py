@@ -13,8 +13,6 @@ def get_genome_mapping(mapping_file):
 
 	@param mapping_file:
 	@type mapping_file: str | unicode
-	@param is_contigs: read or contig mapping file
-	@type is_contigs: boolean
 
 	@return:
 	"""
@@ -27,11 +25,11 @@ def get_genome_mapping(mapping_file):
 			if len(line.strip()) == 0 or line.startswith('#'):
 				continue
 			data = line.split('\t')
-			if len(data) > 5:
+			if len(data) > 4:
 				anonymous_contig_id, genome_id, tax_id, contig_id, number_reads, start_position, end_position, total_length = data
 				total_length = float(total_length)
 			else:
-				anonymous_contig_id, genome_id, tax_id, contig_id, number_reads = data
+				anonymous_contig_id, genome_id, tax_id, contig_id = data
 				total_length = 150. * 2  # doubled because mapping file contains paired reads
 
 			anonymouse_contig_id_to_lengths[anonymous_contig_id] = total_length
@@ -134,18 +132,20 @@ def map_genomes(file_path_query, file_path_mapping, file_path_output):
 			if genome_id not in bin_id_to_genome_id_to_total_length[predicted_bin]:
 				bin_id_to_genome_id_to_total_length[predicted_bin][genome_id] = 0
 			bin_id_to_genome_id_to_total_length[predicted_bin][genome_id] += anonymouse_contig_id_to_lengths[sequence_id]
-		max_rec = 0.0
-		mgen = ""
+		max_overlap = 0.0
+		best_genome_id = ""
 		for genome_id in bin_id_to_genome_id_to_total_length[predicted_bin]:
-			bin_id_to_genome_id_to_total_length[predicted_bin][genome_id] /= genome_id_to_total_length[genome_id]
-			if bin_id_to_genome_id_to_total_length[predicted_bin][genome_id] > max_rec:
-				max_rec = bin_id_to_genome_id_to_total_length[predicted_bin][genome_id]
-				mgen = genome_id
-		if mgen not in mapped:
-			mapped.add(mgen)
+			overlap = bin_id_to_genome_id_to_total_length[predicted_bin][genome_id]
+			# bin_id_to_genome_id_to_total_length[predicted_bin][genome_id] /= genome_id_to_total_length[genome_id]
+			if overlap > max_overlap:
+				max_overlap = overlap
+				best_genome_id = genome_id
+		if best_genome_id not in mapped:
+			mapped.add(best_genome_id)
 		# length of genome in bin divided by bin size
-		prec = bin_id_to_genome_id_to_total_length[predicted_bin][mgen] * genome_id_to_total_length[mgen] / bin_id_to_total_lengths[predicted_bin]
-		bin_metrics[predicted_bin] = [mgen, prec, max_rec, genome_id_to_total_length[mgen]]
+		precision = bin_id_to_genome_id_to_total_length[predicted_bin][best_genome_id] / bin_id_to_total_lengths[predicted_bin]
+		recall = bin_id_to_genome_id_to_total_length[predicted_bin][best_genome_id] / genome_id_to_total_length[best_genome_id]
+		bin_metrics[predicted_bin] = [best_genome_id, precision, recall, genome_id_to_total_length[best_genome_id]]
 	with open(file_path_output, 'w') as write_handler:
 		write_handler.write("Instance\tclass\tprecision\trecall\tpredicted class size\treal class size\n")
 		for predicted_bin in bin_metrics:
