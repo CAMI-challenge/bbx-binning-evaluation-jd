@@ -20,36 +20,56 @@
 # c) Any empty line marks the end of the last matrix and following lines are
 #    interpreted as a new matrix.
 # d) Lines starting with "#" are considered comments and are allowed anywhere
-#    but inside the matrices 
+#    but inside the matrices
 
-from sys import argv, stdout, stderr, stdin, exit
 from classevaltools import parseConfusionMatrix
-from math import ceil
-
+from sys import stdin
 
 if __name__ == "__main__":
-    import getopt
+	import argparse
+	parser = argparse.ArgumentParser()
+	# required arguments
 
-    ignore_class = ""
+	parser.add_argument(
+		"-i", "--ignore_class",
+		default="",
+		type=str,
+		help="Comma separated classes are ignored")
 
-    # output extensive statistics table
-    print "instance\tclass\tprecision\trecall\tpredicted class size\treal class size"
-    upsize = ursize = 0
-    for cmat in parseConfusionMatrix(stdin):
-        tmpstore = []
-        for name, psize, pcorrect in cmat.precision_freqs():
-            if name != ignore_class:
-                prec = pcorrect / float(psize)
-                rsize, rcorrect = cmat.recall_freq(name)
-                assert rcorrect == pcorrect
-                rec = rcorrect / float(rsize)
-                tmpstore.append((psize, rsize, prec, rec, name))
-            else:
-                upsize = psize
-                ursize = cmat.recall_freq(name)[0]
+	options = parser.parse_args()
 
-        for psize, rsize, prec, rec, name in sorted(tmpstore, reverse=True):
-          print "%s\t%s\t%.2f\t%.2f\t%i\t%i" % (cmat.title, name, prec, rec, psize, rsize)
-        if upsize or ursize:
-          print "%s\tunassigned\tnan\tnan\t%i\t%i" % (cmat.title, upsize, ursize)
+	unassigned_class = set(options.ignore_class.split(','))
+	unknown_class = ""
+
+	# output extensive statistics table
+	print "instance\tclass\tprecision\trecall\tpredicted class size\treal class size"
+	unknown_psize = unknown_rsize = unassigned_psize = unassigned_rsize = 0
+	for cmat in parseConfusionMatrix(stdin):
+		tmpstore = []
+		for name, psize, pcorrect in cmat.precision_freqs():
+			if name in unassigned_class:
+				unassigned_psize = psize
+				unassigned_rsize = cmat.recall_freq(name)[0]
+				continue
+			if name in unknown_class:
+				unknown_psize = psize
+				unknown_rsize = cmat.recall_freq(name)[0]
+				continue
+			if float(psize) == 0:  # or math.isnan(float(psize)):
+				prec = float('nan')
+			else:
+				prec = pcorrect / float(psize)
+			rsize, rcorrect = cmat.recall_freq(name)
+			assert rcorrect == pcorrect
+			if float(rsize) == 0:  # or math.isnan(float(rsize)):
+				rec = float('nan')
+			else:
+				rec = rcorrect / float(rsize)
+			tmpstore.append((psize, rsize, prec, rec, name))
+		for psize, rsize, prec, rec, name in sorted(tmpstore, reverse=True):
+			print "%s\t%s\t%.2f\t%.2f\t%i\t%i" % (cmat.title, name, prec, rec, psize, rsize)
+		if unassigned_psize or unassigned_rsize:
+			print "%s\t%s\tnan\tnan\t%i\t%i" % (cmat.title, ",".join(unassigned_class), unassigned_psize, unassigned_rsize)
+		if unknown_psize or unknown_rsize:
+			print "%s\tunknown\tnan\tnan\t%i\t%i" % (cmat.title, unknown_psize, unknown_rsize)
 

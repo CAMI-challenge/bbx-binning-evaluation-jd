@@ -19,51 +19,20 @@
 # PhyloPythia(S)
 #
 # Conventions:
-# a) Comment lines in input must start with '#' (first character) 
+# a) Comment lines in input must start with '#' (first character)
 # b) The first output line, if starting with '#' will give the name of the ranks
 
 # suppress warnings with TaxonomyNcbi package
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    from taxonomyncbi import TaxonomyNcbi
-
-
-def pathIterID(taxonomy, taxid):
-    while taxid:
-        rank = taxonomy.getRank(taxid)
-        yield str(taxid), rank
-        taxid = taxonomy.getParentNcbid(taxid)
-
-
-def pathIterName(taxonomy, taxid):
-    while taxid:
-        name = taxonomy.getScientificName(taxid)
-        rank = taxonomy.getRank(taxid)
-        yield name, rank
-        taxid = taxonomy.getParentNcbid(taxid)
-
-
-def taxID2Ranks(taxonomy, rank2pos, pathIter, taxid): #TODO: alternative is dictionary
-    path = [""] * len(rank2pos)
-    for name, rank in pathIter(taxonomy, taxid):
-        try:
-            i = rank2pos[rank]
-            if path[i]:
-                stderr.write("Warning: multiple '%s' ranks in path: replace '%s' -> '%s'.\n" % (rank, path[i], name))
-            path[i] = name
-        except KeyError:
-            pass
-    return path
-
+    from scripts.NcbiTaxonomy.ncbitaxonomy import NcbiTaxonomy
 
 header = lambda ranks: "#identifier\t%s" % ("\t".join(ranks))
 
-
 # print information on usage
 def Usage():
-    print >> stderr, 'Usage: ', argv[0], '--taxonomy-backend-file ncbitax_sqlite.db --ranks genus,family,order'
-
+    print >> stderr, 'Usage: ', argv[0], '--taxonomy-dir ./ncbi-taxonomy/ --ranks genus,family,order'
 
 if __name__ == "__main__":
     from sys import stdin, stderr, exit, argv
@@ -71,7 +40,7 @@ if __name__ == "__main__":
 
     # parse command line options
     try:
-        opts, args = getopt.getopt(argv[1:], 'ht:r:i', ['help', 'taxonomy-backend-file=', 'ranks=', 'show-identifiers'])
+        opts, args = getopt.getopt(argv[1:], 'ht:u:r:i', ['help', 'taxonomy-dir=', 'unknown-class=', 'ranks=', 'show-identifiers'])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err)  # will print something like "option -a not recognized"
@@ -80,24 +49,28 @@ if __name__ == "__main__":
 
     # defaults
     ranks = ["species", "genus", "family", "order", "class", "phylum", "superkingdom"]
-    path_iterator = pathIterName
-    taxonomy_filename = None
+    show_as_name = True
+    taxonomy_dir = None
+    unknown_class = ""
 
     # option parsing
     for o, a in opts:
         if o in ("-h", "--help"):
             Usage()
             exit()
-        elif o in ("-t", "--taxonomy-backend-file"):
-            taxonomy_filename = a
+        # elif o in ("-t", "--taxonomy-backend-file"):
+        elif o in ("-t", "--taxonomy-dir"):
+            taxonomy_dir = a
+        elif o in ("-u", "--unknown-class"):
+            unknown_class = a
         elif o in ("-r", "--ranks"):
             ranks = a.split(",")
         elif o in ("-i", "--show-identifiers"):
-            path_iterator = pathIterID
+            show_as_name = False
         else:
             assert False, "unhandled option"
 
-    if not taxonomy_filename:
+    if not taxonomy_dir:
         print >> stderr, "you must specify a taxonomy file"
         Usage()
         exit(3)
@@ -108,14 +81,13 @@ if __name__ == "__main__":
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
     # be verbose
-    print >> stderr, 'Using taxonomy file %s' % taxonomy_filename
+    print >> stderr, 'Using taxonomy file %s' % taxonomy_dir
     print >> stderr, 'Using ranks %s' % ",".join(ranks)
 
-    tax = TaxonomyNcbi(taxonomy_filename, ranks)
+    taxonomy = NcbiTaxonomy(taxonomy_dir, False, verbose=False)
     rank2pos = dict((v, i) for i, v in enumerate(ranks))
 
     print header(ranks)
-
     for line in stdin:
         if line[0] != "#":
             line = line.rstrip()
@@ -123,5 +95,7 @@ if __name__ == "__main__":
                 ident, taxid = line.split("\t")[:2]
             except ValueError:
                 stderr.write("error parsing, skipping line \"%s\"" % line)
-            path = taxID2Ranks(tax, rank2pos, path_iterator, taxid)
+                continue
+            path = taxonomy.get_lineage_of_legal_ranks(taxid, ranks, default_value=unknown_class, as_name=show_as_name, inherit_rank=True)
             print "%s\t%s" % (ident, "\t".join(path))
+

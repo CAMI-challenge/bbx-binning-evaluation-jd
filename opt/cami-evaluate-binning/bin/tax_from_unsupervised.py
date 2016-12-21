@@ -17,9 +17,28 @@ Use in biobox, apart from that input is supposed to be in sys.argv:
 # global variable
 taxonomy = ['species','genus','family','order','class','phylum','superkingdom']
 
+def get_mapping(mapping_file): # the mapping file needs to follow the exact format
+	mapping = open(mapping_file)
+	taxon = {}
+	start = True
+	for line in mapping:
+		if (line.startswith('@@')):
+			start = False
+			continue
+		if start:
+			continue
+		parts = line.split()
+		contig = parts[0]
+		taxid = parts[2]
+		length = float(parts[3].split('_')[-1]) # name has _contiglength as last component
+		# number of reads, read length is always 150, #reads * 150/contig_length is coverage
+		taxon[contig] = (taxid, length)
+	mapping.close()
+	return taxon
+
 def map_genomes(filename, gsa):
 	participant = open(filename)
-	gold_standard = get_mapping(gsa, False)[2]
+	gold_standard = get_mapping(gsa)
 	start = False
 	bins = {}
 	seqs = {}
@@ -75,7 +94,7 @@ def write_taxonomic(filename, gsa):
 	return toWrite
 
 profile = write_taxonomic(sys.argv[1],sys.argv[2])
-name = sys.argv[1].split("/")[-1]
-f = open("%s_t" % name,'w') # not beautiful but effective
+name = sys.argv[3]
+f = open(name,'w') # not beautiful but effective
 f.write(profile)
 	
