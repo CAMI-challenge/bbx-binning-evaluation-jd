@@ -98,6 +98,45 @@ def read_participant_file(input_stream):
 
 	return read_rows(input_stream, index_key, index_value)
 
+def calcPrecisionRecall(bin_id_to_genome_id_to_total_length, bin_id_to_total_lengths, genome_id_to_total_length):
+    #now calculate precision looping bins
+    true_positives_p = 0 
+    denominator_p = sum(bin_id_to_total_lengths.values())
+    false_positives_p = 0.0
+    
+    for predicted_bin, genome_assigns in bin_id_to_genome_id_to_total_length.iteritems():
+	    #get maximal genome assignment
+	    if len(genome_assigns) > 0:
+	        maxAssign = max(genome_assigns.values())
+	    else:
+	        maxAssign = 0.0
+	        
+	    true_positives_p += maxAssign
+
+    #now calculate precision as TP/FP + TP	
+    precision = true_positives_p/denominator_p
+
+    #now calculate recall looping genomes
+    true_positives_r  = 0.0
+    false_negatives_r = 0.0
+    for genome_id in genome_id_to_total_length:
+        #now loop bins
+        bin_assigns = [] 
+        for bin_id in bin_id_to_total_lengths:
+            if genome_id in bin_id_to_genome_id_to_total_length[bin_id]:
+                bin_assigns.append(bin_id_to_genome_id_to_total_length[bin_id][genome_id])
+        if len(bin_assigns) > 0:
+            maxAssign = max(bin_assigns)
+        else:
+            maxAssign = 0.0
+        true_positives_r += maxAssign
+        false_negatives_r += genome_id_to_total_length[genome_id] - maxAssign
+    
+    denominator_r = sum(genome_id_to_total_length.values())
+    recall = true_positives_r/denominator_r
+
+    return (precision,recall)
+
 def validate_genomes(file_path_query, file_path_mapping, file_path_output):
     """
     This script calculates precision, recall, accuracy and ARI for binned contigs
