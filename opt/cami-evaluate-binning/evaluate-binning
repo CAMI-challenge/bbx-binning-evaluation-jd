@@ -312,6 +312,9 @@ elif [ "$eval_mode" == "hybrid" ]; then # hybrid binning
   echo "unsupervised_hybrid"
   func_unsupervised_hybrid "$gold_binningfile" "$pred_binningfile" "$seqlenfile" ""
   cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/unsupervised.yaml" biobox.yaml
+elif [ "$eval_mode" == "by_genome" ]; then # evaluation by genome (currently only for taxonomic binners)
+  python "$BBX_OPTDIR/cami-evaluate-binning/bin/by_genome_2.py" "$pred_binningfile" "$gold_binningfile" "$tmpdir" # only folder, will internally create two files for weighted/unweighted prec/rec
+  cp "$BBX_OPTDIR/cami-evaluate-binning/yaml/taxonomic.yaml" biobox.yaml
 elif [ "$eval_mode" == "taxonomic_novelties" ]; then  # taxonomic binning
   echo "taxonomic_novelties"
   file_path_category="$BBX_OPTDIR/novelty_complete.tsv"
