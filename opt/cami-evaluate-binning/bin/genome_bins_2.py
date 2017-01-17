@@ -3,7 +3,8 @@
 import sys
 import gzip
 from exceptions import RuntimeError
-
+from collections import defaultdict
+from collections import Counter
 
 def get_genome_mapping(mapping_file):
 	"""
@@ -16,13 +17,13 @@ def get_genome_mapping(mapping_file):
 
 	@return:
 	"""
-	with gzip.open(mapping_file) as mapping:
+	with open(mapping_file) as mapping:
 		genome_id_to_total_length = {}
 		genome_id_to_list_of_contigs = {}
 		anonymous_contig_id_to_genome_id = {}
 		anonymous_contig_id_to_lengths = {}
 		for line in mapping:
-			if len(line.strip()) == 0 or line.startswith('#'):
+			if len(line.strip()) == 0 or line.startswith('@'):
 				continue
 			data = line.split('\t')
 			if len(data) > 4:
