@@ -1,1 +1,0 @@
-cd "$BBX_MNTDIR/output" && eval_mode='taxonomic_uniqueness' PATH="$BBX_OPTDIR/cami-evaluate-binning/bin:$PATH" "$BBX_OPTDIR/cami-evaluate-binning/evaluate-binning"
