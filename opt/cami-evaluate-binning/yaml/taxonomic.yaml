@@ -56,7 +56,7 @@ results:
         Excluding not predicted sequences.
     type: tsv
     inline: false
-    value: unsupervised_precision_stats.tsv
+    value: ari_stats.tsv
   - name: entropy, rand index, adjusted rand index
     description: >
         Entropy, Rand index and adjusted Rand index for each level that was evaluated.
@@ -65,7 +65,7 @@ results:
         Including not predicted sequences.
     type: tsv
     inline: false
-    value: unsupervised_recall_stats.tsv
+    value: ari_stats_including_unassigned_bin.tsv
   - name: species confusion matrix heatmap
     description: Species confusion matrix as heatmap with cells true (blue), false (red) and unknown (grey) positions. Real taxa are on the y axis and predicted taxon on the x axis.
     type: svg
